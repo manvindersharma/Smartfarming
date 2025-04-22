@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DICE - Chitkara University - Fertilizer Suggestion System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 20px; background: #f5f5f5; }
+    .form-section { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .logo { height: 60px; margin-bottom: 10px; }
+    .header-title { text-align: center; margin-bottom: 20px; }
+    .nav-tabs .nav-link.active { background-color: #e9ecef; }
+    .tab-content { margin-top: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-title">
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Chitkara_University_logo.svg/1200px-Chitkara_University_logo.svg.png" class="logo" alt="Chitkara University Logo">
+    <h2>DICE - Chitkara University<br>Fertilizer Suggestion System for Farmers</h2>
+  </div>
+
+  <div class="form-section">
+    <form id="farmingForm">
+      <h5>Farmer Details</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3"><label>Name</label><input type="text" class="form-control" name="name" required></div>
+        <div class="col-md-6 mb-3"><label>Contact Number</label><input type="tel" class="form-control" name="contact" required></div>
+        <div class="col-md-6 mb-3"><label>Aadhaar Card Number</label><input type="text" class="form-control" name="aadhaar" required></div>
+        <div class="col-md-6 mb-3"><label>Address</label><input type="text" class="form-control" name="address" required></div>
+      </div>
+
+      <h5>Farming Land Location</h5>
+      <div class="row">
+        <div class="col-md-4 mb-3"><label>Village</label><input type="text" class="form-control" name="village" required></div>
+        <div class="col-md-4 mb-3"><label>Tehsil</label><input type="text" class="form-control" name="tehsil" required></div>
+        <div class="col-md-4 mb-3"><label>City</label><input type="text" class="form-control" name="city" required></div>
+        <div class="col-md-4 mb-3"><label>District</label><input type="text" class="form-control" name="district" required></div>
+        <div class="col-md-4 mb-3"><label>State</label><input type="text" class="form-control" name="state" required></div>
+      </div>
+
+      <h5>Soil & Crop Information</h5>
+      <div class="row">
+        <div class="col-md-4 mb-3"><label>N Value</label><input type="number" class="form-control" name="n" required></div>
+        <div class="col-md-4 mb-3"><label>P Value</label><input type="number" class="form-control" name="p" required></div>
+        <div class="col-md-4 mb-3"><label>K Value</label><input type="number" class="form-control" name="k" required></div>
+        <div class="col-md-6 mb-3">
+          <label>Crop Type</label>
+          <select class="form-control" name="crop">
+            <option>Wheat</option>
+            <option>Rice</option>
+            <option>Maize</option>
+            <option>Soybean</option>
+            <option>Cotton</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label>Days Since Sown</label>
+          <select class="form-control" name="days">
+            <option value="0-10">0-10 days</option>
+            <option value="11-30">11-30 days</option>
+            <option value="31-60">31-60 days</option>
+            <option value="61+">61+ days</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Submit & Get Suggestion</button>
+    </form>
+
+    <div class="mt-4" id="suggestionBox" style="display:none;">
+      <ul class="nav nav-tabs" id="langTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#en" type="button">English</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#hi" type="button">Hindi</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pa" type="button">Punjabi</button></li>
+      </ul>
+      <div class="tab-content p-3 border border-top-0 bg-white rounded-bottom shadow-sm">
+        <div class="tab-pane fade show active" id="en"></div>
+        <div class="tab-pane fade" id="hi"></div>
+        <div class="tab-pane fade" id="pa"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('farmingForm');
+  const suggestionBox = document.getElementById('suggestionBox');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    const N = parseInt(data.n), P = parseInt(data.p), K = parseInt(data.k);
+    const crop = data.crop;
+
+    // English Suggestion
+    let en = `🧑‍🌾 Fertilizer Suggestion for ${crop}:\n`;
+    if (crop === 'Wheat') {
+      if (N < 50) en += "- Low Nitrogen: Apply 45 kg/acre of Urea (Ex: IFFCO Urea).\n";
+      if (P < 30) en += "- Low Phosphorus: Apply 25 kg/acre of DAP (Ex: Tata Paras DAP).\n";
+      if (K < 20) en += "- Low Potassium: Apply 20 kg/acre of MOP (Muriate of Potash).\n";
+    } else if (crop === 'Rice') {
+      if (N < 40) en += "- Nitrogen deficient: Apply 40 kg/acre Ammonium Sulphate (Ex: GSFC Brand).\n";
+      if (P < 25) en += "- Low Phosphorus: Apply 20 kg/acre SSP (Ex: Chambal Fertilisers).\n";
+    } else {
+      en += "- Use a balanced NPK mix like 10:26:26 (Ex: KRIBHCO) at 50 kg/acre.\n";
+    }
+
+    en += `
+🛠️ How to Apply:
+- Mix fertilizer with soil or sand for even spreading.
+- Keep 2-3 inches away from root zone.
+- Apply in early morning or late evening.
+- Water immediately after application.
+
+📆 Recheck soil NPK values after 20–30 days for accuracy.
+
+🏡 Organic Tips:
+- Use 5 tons/acre well-decomposed cow dung.
+- Add 100 kg/acre neem cake for pest control.
+- Vermicompost increases soil microbes and moisture retention.
+- Banana peels & bone meal as additional nutrients.
+
+🌾 Smart Farming Tips:
+- Use drip irrigation to conserve water.
+- Practice mulching to reduce evaporation and weed growth.
+- Rotate crops every season to improve soil health.
+- Use AgriApp / Kisan Suvidha for timely advice.
+- Install pheromone traps for pest control.
+`;
+
+    const hi = `
+👨‍🌾 उर्वरक सुझाव (${crop} के लिए):
+
+${en.replace(/Apply/g, "लगाएं").replace(/kg\/acre/g, "किलो/एकड़").replace(/Urea/g, "यूरिया").replace(/DAP/g, "डीएपी").replace(/MOP/g, "एमओपी")}
+
+🛠️ आवेदन विधि:
+- उर्वरक को मिट्टी या रेत के साथ मिलाकर समान रूप से फैलाएं।
+- पौधों की जड़ों से 2-3 इंच दूर रखें।
+- सुबह या शाम को डालें।
+- डालने के बाद तुरंत सिंचाई करें।
+
+📆 मिट्टी की जांच 20-30 दिनों में पुनः कराएं।
+
+🏡 जैविक सुझाव:
+- प्रति एकड़ 5 टन सड़ी गोबर की खाद डालें।
+- 100 किलो/एकड़ नीम की खली डालें।
+- वर्मी कम्पोस्ट से जीवाणु और नमी में सुधार होता है।
+- केले के छिलके, हड्डी का चूर्ण डालें।
+
+🌾 स्मार्ट खेती:
+- ड्रिप सिंचाई अपनाएं।
+- मल्चिंग से नमी और खरपतवार नियंत्रण होता है।
+- फसल चक्र अपनाएं।
+- Kisan Suvidha ऐप का प्रयोग करें।
+- कीट नियंत्रण के लिए फेरोमोन ट्रैप लगाएं।
+`;
+
+    const pa = `
+👨‍🌾 ਖਾਦ ਸੁਝਾਅ (${crop} ਲਈ):
+
+${en.replace(/Apply/g, "ਲਗਾਓ").replace(/kg\/acre/g, "ਕਿਲੋ/ਏਕੜ").replace(/Urea/g, "ਯੂਰਿਆ").replace(/DAP/g, "ਡੀਏਪੀ").replace(/MOP/g, "ਐਮਓਪੀ")}
+
+🛠️ ਲਾਗੂ ਕਰਨ ਦੀ ਵਿਧੀ:
+- ਖਾਦ ਨੂੰ ਮਿੱਟੀ ਜਾਂ ਰੇਤ ਨਾਲ ਮਿਲਾ ਕੇ ਪਾਓ।
+- ਬੂਟਿਆਂ ਦੀ ਜੜ ਤੋਂ 2-3 ਇੰਚ ਦੂਰ ਪਾਓ।
+- ਸਵੇਰੇ ਜਾਂ ਸ਼ਾਮ ਖਾਦ ਪਾਓ।
+- ਖਾਦ ਪਾਉਣ ਤੋਂ ਬਾਅਦ ਪਾਣੀ ਦੇਵੋ।
+
+📆 20-30 ਦਿਨਾਂ ਬਾਅਦ NPK ਮੁੜ ਜਾਂਚੋ।
+
+🏡 ਜੈਵਿਕ ਸੁਝਾਅ:
+- 5 ਟਨ ਗੋਬਰ ਖਾਦ/ਏਕੜ ਵਰਤੋ।
+- 100 ਕਿਲੋ/ਏਕੜ ਨੀਮ ਖਲ ਪਾਓ।
+- ਵਰਮੀਕੰਪੋਸਟ ਮਿੱਟੀ ਲਈ ਫਾਇਦੇਮੰਦ ਹੈ।
+- ਕੇਲੇ ਦੇ ਛਿਲਕੇ, ਹੱਡੀ ਦਾ ਚੂਰਨ ਵਰਤੋ।
+
+🌾 ਸਮਾਰਟ ਫਾਰਮਿੰਗ:
+- ਡ੍ਰਿਪ ਸਿੰਚਾਈ ਵਰਤੋ।
+- ਮਲਚਿੰਗ ਨਾਲ ਨਮੀ ਅਤੇ ਘਾਹ ਕੰਟਰੋਲ ਹੁੰਦਾ ਹੈ।
+- ਫ਼ਸਲਾਂ ਦੀ ਬਦਲੀ ਕਰੋ।
+- Kisan Suvidha ਐਪ ਵਰਤੋ।
+- ਫੇਰੋਮੋਨ ਟਰੈਪ ਲਗਾਓ।
+`;
+
+    document.getElementById('en').innerText = en;
+    document.getElementById('hi').innerText = hi;
+    document.getElementById('pa').innerText = pa;
+    suggestionBox.style.display = 'block';
+
+    // Optional: Send to Google Sheets
+    fetch('https://script.google.com/macros/s/AKfycbzi43EnQ1og71iZdLzGMXE2pD4QwMRkaRWKouY9fm5wGBfcG-NMB7izc0tIGOJX3Wn5/exec', {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
