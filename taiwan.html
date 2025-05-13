@@ -54,6 +54,10 @@
             border-radius: 5px;
             font-size: 16px;
         }
+        select:disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
         .form-row {
             display: flex;
             flex-wrap: wrap;
@@ -187,13 +191,6 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="district" id="district-label">District / 區</label>
-                    <select id="district" required>
-                        <option value="">-- Select / 選擇 --</option>
-                    </select>
-                    <div id="district-error" class="error-message">Please select a district</div>
-                </div>
-                <div class="form-group">
                     <label for="city" id="city-label">City/County / 縣市</label>
                     <select id="city" required onchange="updateDistricts()">
                         <option value="">-- Select / 選擇 --</option>
@@ -220,6 +217,13 @@
                         <option value="lienchiang">Lienchiang County / 連江縣</option>
                     </select>
                     <div id="city-error" class="error-message">Please select a city</div>
+                </div>
+                <div class="form-group">
+                    <label for="district" id="district-label">District / 區</label>
+                    <select id="district" required disabled>
+                        <option value="">-- Select City First / 先選擇縣市 --</option>
+                    </select>
+                    <div id="district-error" class="error-message">Please select a district</div>
                 </div>
             </div>
             
@@ -272,7 +276,7 @@
                 </div>
             </div>
             
-            <div284 class="form-group">
+            <div class="form-group">
                 <label for="cropAge" id="cropAge-label">Crop Age / 作物年齡</label>
                 <select id="cropAge" required>
                     <option value="">-- Select / 選擇 --</option>
@@ -460,6 +464,7 @@
             const selectedCity = citySelect.value;
             
             districtSelect.innerHTML = '<option value="">-- Select / 選擇 --</option>';
+            districtSelect.disabled = !selectedCity;
             
             if (selectedCity && taiwanDistricts[selectedCity]) {
                 taiwanDistricts[selectedCity].forEach(district => {
@@ -468,7 +473,10 @@
                     option.textContent = `${district} / ${chineseDistrictMapping[district] || district + '區'}`;
                     districtSelect.appendChild(option);
                 });
+            } else {
+                districtSelect.innerHTML = '<option value="">-- Select City First / 先選擇縣市 --</option>';
             }
+            console.log('District select updated, disabled:', districtSelect.disabled);
         }
         
         // Language toggle
@@ -516,8 +524,8 @@
                 { id: 'nationalId', errorId: 'nationalId-error', regex: /^[A-Z][1-2][0-9]{8}$/, message: currentLanguage === 'en' ? 'Please enter a valid Taiwan National ID (e.g., A123456789)' : '請輸入有效的台灣身分證字號（如A123456789）' },
                 { id: 'email', errorId: 'email-error', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: currentLanguage === 'en' ? 'Please enter a valid email address' : '請輸入有效的電子郵件地址' },
                 { id: 'address', errorId: 'address-error', regex: /^.{5,200}$/, message: currentLanguage === 'en' ? 'Please enter a valid address (5-200 characters)' : '請輸入有效的地址（5-200個字符）' },
-                { id: 'district', errorId: 'district-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a district' : '請選擇一個區' },
                 { id: 'city', errorId: 'city-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a city' : '請選擇一個縣市' },
+                { id: 'district', errorId: 'district-error', check: value => document.getElementById('city').value !== '' && value !== '', message: currentLanguage === 'en' ? 'Please select a district after selecting a city' : '請在選擇縣市後選擇一個區' },
                 { id: 'nitrogen', errorId: 'nitrogen-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Nitrogen' : '請輸入氮值0到100之間的值' },
                 { id: 'phosphorus', errorId: 'phosphorus-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Phosphorus' : '請輸入磷值0到100之間的值' },
                 { id: 'potassium', errorId: 'potassium-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Potassium' : '請輸入鉀值0到100之間的值' },
@@ -605,11 +613,11 @@
             // Get form values
             const formData = {
                 timestamp: new Date().toISOString(),
-                name: document.getElementById('name').value,
-                contact: document.getElementById('contact').value,
-                nationalId: document.getElementById('nationalId').value,
-                email: document.getElementById('email').value,
-                address: document.getElementById('address').value,
+                name: document.getElementById('name').value || '',
+                contact: document.getElementById('contact').value || '',
+                nationalId: document.getElementById('nationalId').value || '',
+                email: document.getElementById('email').value || '',
+                address: document.getElementById('address').value || '',
                 district: document.getElementById('district').value ? document.getElementById('district').options[document.getElementById('district').selectedIndex].text : '',
                 city: document.getElementById('city').value ? document.getElementById('city').options[document.getElementById('city').selectedIndex].text : '',
                 nitrogen: parseInt(document.getElementById('nitrogen').value) || 0,
@@ -681,7 +689,7 @@
         
         // Enhanced recommendations logic
         function getRecommendations(cropType, cropAge, n, p, k, moisture, ph) {
-            console.log('getRecommendations called with:', { cropType, cropAge, n, p, k, moisture, ph });
+            console.log('getaRecommendations called with:', { cropType, cropAge, n, p, k, moisture, ph });
             const recommendations = {
                 fertilizer: { en: '', zh: '' },
                 treatment: { en: '', zh: '' },
@@ -888,6 +896,7 @@
         // Initialize
         console.log('Initializing page');
         toggleLanguage('en');
+        updateDistricts(); // Ensure district is disabled on page load
     </script>
 </body>
 </html>
