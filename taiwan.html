@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Suggestion System - Taiwan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans TC', Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 20px;
+        }
+        h1 {
+            color: #2E7D32;
+            margin-bottom: 5px;
+        }
+        h2 {
+            color: #388E3C;
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            display: block;
+            margin: 30px auto;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2E7D32;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .language-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .language-toggle button {
+            margin: 0 5px;
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+        .english, .chinese {
+            margin-top: 20px;
+        }
+        .chinese {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .recommendation-section {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .recommendation-section h3 {
+            color: #2E7D32;
+        }
+        .error-message {
+            color: #D32F2F;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #4CAF50;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Research Institute of IoT Cybersecurity</h1>
+            <h2>Department of Electronic Engineering<br>National Kaohsiung University of Science and Technology, Taiwan</h2>
+        </div>
+        
+        <div class="language-toggle">
+            <button onclick="toggleLanguage('en')" id="en-btn">English</button>
+            <button onclick="toggleLanguage('zh')" id="zh-btn">中文</button>
+        </div>
+        
+        <form id="farmerForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name" id="name-label">Name / 姓名</label>
+                    <input type="text" id="name" required>
+                    <div id="name-error" class="error-message">Please enter a valid name</div>
+                </div>
+                <div class="form-group">
+                    <label for="contact" id="contact-label">Contact Number / 聯絡電話</label>
+                    <input type="tel" id="contact" required pattern="09[0-9]{8}">
+                    <div id="contact-error" class="error-message">Please enter a valid Taiwan mobile number (e.g., 0912345678)</div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nationalId" id="nationalId-label">National ID / 身分證字號</label>
+                    <input type="text" id="nationalId" required pattern="[A-Z][1-2][0-9]{8}">
+                    <div id="nationalId-error" class="error-message">Please enter a valid Taiwan National ID (e.g., A123456789)</div>
+                </div>
+                <div class="form-group">
+                    <label for="email" id="email-label">Email ID / 電子郵件</label>
+                    <input type="email" id="email" required>
+                    <div id="email-error" class="error-message">Please enter a valid email address</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="address" id="address-label">Detailed Farm Address / 詳細農場地址</label>
+                <input type="text" id="address" required placeholder="Street/Village/Town Address">
+                <div id="address-error" class="error-message">Please enter a valid address</div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="district" id="district-label">District / 區</label>
+                    <select id="district" required>
+                        <option value="">-- Select / 選擇 --</option>
+                    </select>
+                    <div id="district-error" class="error-message">Please select a district</div>
+                </div>
+                <div class="form-group">
+                    <label for="city" id="city-label">City/County / 縣市</label>
+                    <select id="city" required onchange="updateDistricts()">
+                        <option value="">-- Select / 選擇 --</option>
+                        <option value="taipei">Taipei City / 臺北市</option>
+                        <option value="newtaipei">New Taipei City / 新北市</option>
+                        <option value="taoyuan">Taoyuan City / 桃園市</option>
+                        <option value="taichung">Taichung City / 臺中市</option>
+                        <option value="tainan">Tainan City / 臺南市</option>
+                        <option value="kaohsiung">Kaohsiung City / 高雄市</option>
+                        <option value="hsinchu_city">Hsinchu City / 新竹市</option>
+                        <option value="hsinchu_county">Hsinchu County / 新竹縣</option>
+                        <option value="miaoli">Miaoli County / 苗栗縣</option>
+                        <option value="changhua">Changhua County / 彰化縣</option>
+                        <option value="nantou">Nantou County / 南投縣</option>
+                        <option value="yunlin">Yunlin County / 雲林縣</option>
+                        <option value="chiayi_city">Chiayi City / 嘉義市</option>
+                        <option value="chiayi_county">Chiayi County / 嘉義縣</option>
+                        <option value="pingtung">Pingtung County / 屏東縣</option>
+                        <option value="yilan">Yilan County / 宜蘭縣</option>
+                        <option value="hualien">Hualien County / 花蓮縣</option>
+                        <option value="taitung">Taitung County / 臺東縣</option>
+                        <option value="penghu">Penghu County / 澎湖縣</option>
+                        <option value="kinmen">Kinmen County / 金門縣</option>
+                        <option value="lienchiang">Lienchiang County / 連江縣</option>
+                    </select>
+                    <div id="city-error" class="error-message">Please select a city</div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nitrogen" id="nitrogen-label">Nitrogen (N) Value / 氮值</label>
+                    <input type="number" id="nitrogen" min="0" max="100" required placeholder="e.g., 14">
+                    <div id="nitrogen-error" class="error-message">Please enter a value between 0 and 100</div>
+                </div>
+                <div class="form-group">
+                    <label for="phosphorus" id="phosphorus-label">Phosphorus (P) Value / 磷值</label>
+                    <input type="number" id="phosphorus" min="0" max="100" required placeholder="e.g., 7">
+                    <div id="phosphorus-error" class="error-message">Please enter a value between 0 and 100</div>
+                </div>
+                <div class="form-group">
+                    <label for="potassium" id="potassium-label">Potassium (K) Value / 鉀值</label>
+                    <input type="number" id="potassium" min="0" max="100" required placeholder="e.g., 10">
+                    <div id="potassium-error" class="error-message">Please enter a value between 0 and 100</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="moisture" id="moisture-label">Soil Moisture (%) / 土壤濕度</label>
+                <input type="number" id="moisture" min="0" max="100" required>
+                <div id="moisture-error" class="error-message">Please enter a value between 0 and 100</div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ph" id="ph-label">pH Value / 酸鹼值</label>
+                    <input type="number" id="ph" min="0" max="14" step="0.1" required>
+                    <div id="ph-error" class="error-message">Please enter a value between 0 and 14</div>
+                </div>
+                <div class="form-group">
+                    <label for="cropType" id="cropType-label">Crop Type / 作物種類</label>
+                    <select id="cropType" required>
+                        <option value="">-- Select / 選擇 --</option>
+                        <option value="rice">Rice / 稻米</option>
+                        <option value="tea">Tea / 茶葉</option>
+                        <option value="banana">Banana / 香蕉</option>
+                        <option value="pineapple">Pineapple / 鳳梨</option>
+                        <option value="mango">Mango / 芒果</option>
+                        <option value="guava">Guava / 芭樂</option>
+                        <option value="lychee">Lychee / 荔枝</option>
+                        <option value="cabbage">Cabbage / 高麗菜</option>
+                        <option value="dragonFruit">Dragon Fruit / 火龍果</option>
+                        <option value="sugarcane">Sugarcane / 甘蔗</option>
+                    </select>
+                    <div id="cropType-error" class="error-message">Please select a crop type</div>
+                </div>
+            </div>
+            
+            <div284 class="form-group">
+                <label for="cropAge" id="cropAge-label">Crop Age / 作物年齡</label>
+                <select id="cropAge" required>
+                    <option value="">-- Select / 選擇 --</option>
+                    <option value="seedling">Seedling / 幼苗期</option>
+                    <option value="vegetative">Vegetative Growth / 營養生長期</option>
+                    <option value="flowering">Flowering/Fruiting / 開花/結果期</option>
+                    <option value="mature">Mature / 成熟期</option>
+                    <option value="harvest">Harvest / 收穫期</option>
+                </select>
+                <div id="cropAge-error" class="error-message">Please select a crop age</div>
+            </div>
+            
+            <div class="loading" id="loading">Loading...</div>
+            <button type="button" id="submit-btn" onclick="generateSuggestions()">Generate Recommendations / 產生建議</button>
+        </form>
+        
+        <div id="results" class="results">
+            <h2 id="results-title">Farming Recommendations / 農業建議</h2>
+            
+            <div id="english-results" class="english">
+                <h3>Recommendations in English</h3>
+                <div class="recommendation-section">
+                    <h3>Fertilizer Recommendations</h3>
+                    <div id="fertilizer-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Treatment Recommendations</h3>
+                    <div id="treatment-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Age-Specific Recommendations</h3>
+                    <div id="ageSpecific-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Water Management</h3>
+                    <div id="water-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Soil Health Recommendations</h3>
+                    <div id="soil-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Pest Control Recommendations</h3>
+                    <div id="pest-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Crop Rotation Recommendations</h3>
+                    <div id="rotation-en"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>Seasonal Recommendations</h3>
+                    <div id="seasonal-en"></div>
+                </div>
+            </div>
+            
+            <div id="chinese-results" class="chinese">
+                <h3>中文建議</h3>
+                <div class="recommendation-section">
+                    <h3>肥料建議</h3>
+                    <div id="fertilizer-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>處理建議</h3>
+                    <div id="treatment-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>根據作物年齡的建議</h3>
+                    <div id="ageSpecific-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>水分管理</h3>
+                    <div id="water-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>土壤健康建議</h3>
+                    <div id="soil-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>病蟲害防治建議</h3>
+                    <div id="pest-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>輪作建議</h3>
+                    <div id="rotation-zh"></div>
+                </div>
+                <div class="recommendation-section">
+                    <h3>季節性建議</h3>
+                    <div id="seasonal-zh"></div>
+                </div>
+            </div>
+            
+            <div class="google-sheets-info">
+                <p id="data-saved-message" style="color: #2E7D32; font-weight: bold; display: none;">
+                    Data has been saved to Google Sheets / 數據已保存到Google表格
+                </p>
+                <p id="data-error-message" style="color: #D32F2F; font-weight: bold; display: none;">
+                    Error saving data to Google Sheets / 保存數據到Google表格時發生錯誤
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set default language
+        let currentLanguage = 'en';
+        
+        // Taiwan districts data
+        const taiwanDistricts = {
+            taipei: ["Zhongzheng", "Datong", "Zhongshan", "Songshan", "Daan", "Wanhua", "Xinyi", "Shilin", "Beitou", "Neihu", "Nangang", "Wenshan"],
+            newtaipei: ["Banqiao", "Sanchong", "Zhonghe", "Yonghe", "Xinzhuang", "Xindian", "Tucheng", "Luzhou", "Shulin", "Yingge", "Sanxia", "Ruifang", "Wulai"],
+            taoyuan: ["Taoyuan", "Zhongli", "Daxi", "Yangmei", "Luzhu", "Dayuan", "Guishan", "Bade", "Longtan", "Pingzhen", "Xinwu", "Guanyin", "Fuxing"],
+            taichung: ["Central", "East", "West", "South", "North", "Beitun", "Xitun", "Nantun", "Dali", "Wufeng", "Wuri", "Fengyuan", "Houli"],
+            tainan: ["East", "South", "North", "Anping", "Annan", "Yongkang", "Guiren", "Xinhua", "Zuozhen", "Yujing", "Nanxi", "Shanhua"],
+            kaohsiung: ["Xinxing", "Qianjin", "Lingya", "Yancheng", "Gushan", "Qijin", "Qianzhen", "Sanmin", "Nanzi", "Xiaogang", "Zuoying", "Renwu", "Dashe"],
+            hsinchu_city: ["East", "North", "Xiangshan"],
+            hsinchu_county: ["Zhubei", "Hukou", "Xinfeng", "Zhudong", "Baoshan", "Beipu", "Emei", "Guanxi"],
+            miaoli: ["Miaoli City", "Toufen", "Zhunan", "Zaoqiao", "Touwu", "Yuanli", "Tongxiao", "Sanwan", "Xihu"],
+            changhua: ["Changhua City", "Lukang", "Hemei", "Shengang", "Yuanlin", "Shetou", "Erlin", "Puyan", "Puxin", "Xiushui"],
+            nantou: ["Nantou City", "Caotun", "Puli", "Jhushan", "Yuchi", "Xinyi", "Lugu", "Mingjian", "Zhushan"],
+            yunlin: ["Douliu", "Dounan", "Tuku", "Huwei", "Beigang", "Shuilin", "Linnei", "Gukeng", "Citong", "Mailiao"],
+            chiayi_city: ["East", "West"],
+            chiayi_county: ["Taibao", "Puzi", "Dongshi", "Budai", "Dalin", "Minxiong", "Xikou", "Xingang", "Lucao", "Alishan"],
+            pingtung: ["Pingtung City", "Chaozhou", "Donggang", "Hengchun", "Kending", "Wandan", "Linbian", "Nanzhou", "Neipu", "Zhutian"],
+            yilan: ["Yilan City", "Luodong", "Suao", "Toucheng", "Sanxing", "Dongshan", "Wujie", "Yuanshan", "Nanze"],
+            hualien: ["Hualien City", "Fenglin", "Yuli", "Fengbin", "Shoufeng", "Xiulin", "Guangfu", "Fuli", "Ruisui"],
+            taitung: ["Taitung City", "Chenggong", "Guanshan", "Luye", "Beinan", "Dawu", "Taimali", "Chishang", "Donghe"],
+            penghu: ["Magong", "Huxi", "Baisha", "Xiyu", "Wang'an", "Qimei"],
+            kinmen: ["Jincheng", "Jinhu", "Jinsha", "Jinning", "Lieyu", "Wuqiu"],
+            lienchiang: ["Nangan", "Beigan", "Juguang", "Dongyin"]
+        };
+        
+        // Chinese district mappings
+        const chineseDistrictMapping = {
+            Zhongzheng: "中正區",
+            Datong: "大同區",
+            Zhongshan: "中山區",
+            Songshan: "松山區",
+            Daan: "大安區",
+            Wanhua: "萬華區",
+            Xinyi: "信義區",
+            Shilin: "士林區",
+            Beitou: "北投區",
+            Neihu: "內湖區",
+            Nangang: "南港區",
+            Wenshan: "文山區",
+            Banqiao: "板橋區",
+            Sanchong: "三重區",
+            Zhonghe: "中和區",
+            Yonghe: "永和區",
+            Xinzhuang: "新莊區",
+            Xindian: "新店區",
+            Tucheng: "土城區",
+            Luzhou: "盧州區",
+            Shulin: "樹林區",
+            Yingge: "鶯歌區",
+            Sanxia: "三峽區",
+            Ruifang: "瑞芳區",
+            Wulai: "烏來區",
+            East: "東區",
+            West: "西區",
+            South: "南區",
+            North: "北區",
+            Central: "中區"
+        };
+
+        // Chinese crop name mappings
+        const cropNameChinese = {
+            rice: "稻米",
+            tea: "茶葉",
+            banana: "香蕉",
+            pineapple: "鳳梨",
+            mango: "芒果",
+            guava: "芭樂",
+            lychee: "荔枝",
+            cabbage: "高麗菜",
+            dragonFruit: "火龍果",
+            sugarcane: "甘蔗"
+        };
+
+        // Function to update districts based on city selection
+        function updateDistricts() {
+            console.log('updateDistricts called');
+            const citySelect = document.getElementById('city');
+            const districtSelect = document.getElementById('district');
+            const selectedCity = citySelect.value;
+            
+            districtSelect.innerHTML = '<option value="">-- Select / 選擇 --</option>';
+            
+            if (selectedCity && taiwanDistricts[selectedCity]) {
+                taiwanDistricts[selectedCity].forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district.toLowerCase().replace(' ', '_');
+                    option.textContent = `${district} / ${chineseDistrictMapping[district] || district + '區'}`;
+                    districtSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Language toggle
+        function toggleLanguage(lang) {
+            console.log('toggleLanguage called with lang:', lang);
+            currentLanguage = lang;
+            
+            const labels = {
+                'name-label': lang === 'en' ? 'Name' : '姓名',
+                'contact-label': lang === 'en' ? 'Contact Number' : '聯絡電話',
+                'nationalId-label': lang === 'en' ? 'National ID' : '身分證字號',
+                'email-label': lang === 'en' ? 'Email ID' : '電子郵件',
+                'address-label': lang === 'en' ? 'Detailed Farm Address' : '詳細農場地址',
+                'district-label': lang === 'en' ? 'District' : '區',
+                'city-label': lang === 'en' ? 'City/County' : '縣市',
+                'nitrogen-label': lang === 'en' ? 'Nitrogen (N) Value' : '氮值',
+                'phosphorus-label': lang === 'en' ? 'Phosphorus (P) Value' : '磷值',
+                'potassium-label': lang === 'en' ? 'Potassium (K) Value' : '鉀值',
+                'moisture-label': lang === 'en' ? 'Soil Moisture (%)' : '土壤濕度 (%)',
+                'ph-label': lang === 'en' ? 'pH Value' : '酸鹼值',
+                'cropType-label': lang === 'en' ? 'Crop Type' : '作物種類',
+                'cropAge-label': lang === 'en' ? 'Crop Age' : '作物年齡',
+                'results-title': lang === 'en' ? 'Farming Recommendations' : '農業建議'
+            };
+            
+            Object.keys(labels).forEach(id => {
+                document.getElementById(id).textContent = labels[id];
+            });
+            
+            document.getElementById('english-results').style.display = lang === 'en' ? 'block' : 'none';
+            document.getElementById('chinese-results').style.display = lang === 'en' ? 'none' : 'block';
+            
+            document.getElementById('en-btn').style.backgroundColor = lang === 'en' ? '#2E7D32' : '#4CAF50';
+            document.getElementById('zh-btn').style.backgroundColor = lang === 'zh' ? '#2E7D32' : '#4CAF50';
+        }
+        
+        // Input validation
+        function validateForm() {
+            console.log('validateForm called');
+            let isValid = true;
+            const errorMessages = [];
+            const fields = [
+                { id: 'name', errorId: 'name-error', regex: /^[a-zA-Z\s\u4e00-\u9fa5]{2,50}$/, message: currentLanguage === 'en' ? 'Please enter a valid name (2-50 characters)' : '請輸入有效姓名（2-50個字符）' },
+                { id: 'contact', errorId: 'contact-error', regex: /^09[0-9]{8}$/, message: currentLanguage === 'en' ? 'Please enter a valid Taiwan mobile number (e.g., 0912345678)' : '請輸入有效的台灣手機號碼（如0912345678）' },
+                { id: 'nationalId', errorId: 'nationalId-error', regex: /^[A-Z][1-2][0-9]{8}$/, message: currentLanguage === 'en' ? 'Please enter a valid Taiwan National ID (e.g., A123456789)' : '請輸入有效的台灣身分證字號（如A123456789）' },
+                { id: 'email', errorId: 'email-error', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: currentLanguage === 'en' ? 'Please enter a valid email address' : '請輸入有效的電子郵件地址' },
+                { id: 'address', errorId: 'address-error', regex: /^.{5,200}$/, message: currentLanguage === 'en' ? 'Please enter a valid address (5-200 characters)' : '請輸入有效的地址（5-200個字符）' },
+                { id: 'district', errorId: 'district-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a district' : '請選擇一個區' },
+                { id: 'city', errorId: 'city-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a city' : '請選擇一個縣市' },
+                { id: 'nitrogen', errorId: 'nitrogen-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Nitrogen' : '請輸入氮值0到100之間的值' },
+                { id: 'phosphorus', errorId: 'phosphorus-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Phosphorus' : '請輸入磷值0到100之間的值' },
+                { id: 'potassium', errorId: 'potassium-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Potassium' : '請輸入鉀值0到100之間的值' },
+                { id: 'moisture', errorId: 'moisture-error', check: value => !isNaN(value) && value >= 0 && value <= 100, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 100 for Moisture' : '請輸入土壤濕度0到100之間的值' },
+                { id: 'ph', errorId: 'ph-error', check: value => !isNaN(value) && value >= 0 && value <= 14, message: currentLanguage === 'en' ? 'Please enter a value between 0 and 14 for pH' : '請輸入酸鹼值0到14之間的值' },
+                { id: 'cropType', errorId: 'cropType-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a crop type' : '請選擇作物種類' },
+                { id: 'cropAge', errorId: 'cropAge-error', check: value => value !== '', message: currentLanguage === 'en' ? 'Please select a crop age' : '請選擇作物年齡' }
+            ];
+            
+            fields.forEach(field => {
+                const input = document.getElementById(field.id);
+                const errorElement = document.getElementById(field.errorId);
+                const value = input.value.trim();
+                
+                let valid;
+                if (field.regex) {
+                    valid = field.regex.test(value);
+                } else if (field.check) {
+                    valid = field.check(value);
+                }
+                
+                errorElement.textContent = field.message;
+                errorElement.style.display = valid ? 'none' : 'block';
+                if (!valid) {
+                    isValid = false;
+                    errorMessages.push(field.message);
+                }
+            });
+            
+            console.log('validateForm result:', isValid, 'Errors:', errorMessages);
+            if (!isValid) {
+                alert(currentLanguage === 'en' 
+                    ? 'Please correct the following errors:\n' + errorMessages.join('\n')
+                    : '請修正以下錯誤：\n' + errorMessages.join('\n'));
+            }
+            
+            return isValid;
+        }
+        
+        // Submit data to Google Sheets
+        async function submitToGoogleSheets(data) {
+            console.log('submitToGoogleSheets called with data:', data);
+            // Replace with your Google Apps Script Web App URL
+            const url = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
+            
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('submit-btn').disabled = true;
+                document.getElementById('data-saved-message').style.display = 'none';
+                document.getElementById('data-error-message').style.display = 'none';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    redirect: 'follow'
+                });
+                
+                if (response.ok) {
+                    document.getElementById('data-saved-message').style.display = 'block';
+                    console.log('Data saved to Google Sheets');
+                } else {
+                    throw new Error('Failed to save data');
+                }
+            } catch (error) {
+                console.error('Google Sheets Error:', error);
+                document.getElementById('data-error-message').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('submit-btn').disabled = false;
+            }
+        }
+        
+        // Generate recommendations
+        async function generateSuggestions() {
+            console.log('generateSuggestions called');
+            
+            if (!validateForm()) {
+                console.log('Form validation failed');
+                return;
+            }
+            
+            // Get form values
+            const formData = {
+                timestamp: new Date().toISOString(),
+                name: document.getElementById('name').value,
+                contact: document.getElementById('contact').value,
+                nationalId: document.getElementById('nationalId').value,
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+                district: document.getElementById('district').value ? document.getElementById('district').options[document.getElementById('district').selectedIndex].text : '',
+                city: document.getElementById('city').value ? document.getElementById('city').options[document.getElementById('city').selectedIndex].text : '',
+                nitrogen: parseInt(document.getElementById('nitrogen').value) || 0,
+                phosphorus: parseInt(document.getElementById('phosphorus').value) || 0,
+                potassium: parseInt(document.getElementById('potassium').value) || 0,
+                moisture: parseInt(document.getElementById('moisture').value) || 0,
+                ph: parseFloat(document.getElementById('ph').value) || 0,
+                cropType: document.getElementById('cropType').value ? document.getElementById('cropType').options[document.getElementById('cropType').selectedIndex].text : '',
+                cropAge: document.getElementById('cropAge').value ? document.getElementById('cropAge').options[document.getElementById('cropAge').selectedIndex].text : ''
+            };
+            
+            console.log('Form data collected:', formData);
+            
+            const cropTypeValue = formData.cropType.split(' / ')[0].toLowerCase();
+            const cropAgeValue = formData.cropAge.split(' / ')[0].toLowerCase();
+            
+            console.log('Crop type:', cropTypeValue, 'Crop age:', cropAgeValue);
+            
+            const recommendations = getRecommendations(
+                cropTypeValue,
+                cropAgeValue,
+                formData.nitrogen,
+                formData.phosphorus,
+                formData.potassium,
+                formData.moisture,
+                formData.ph
+            );
+            
+            console.log('Recommendations generated:', recommendations);
+            
+            // Display recommendations with error handling
+            const categories = ['fertilizer', 'treatment', 'ageSpecific', 'water', 'soil', 'pest', 'rotation', 'seasonal'];
+            categories.forEach(category => {
+                const enElement = document.getElementById(`${category}-en`);
+                const zhElement = document.getElementById(`${category}-zh`);
+                if (recommendations[category]) {
+                    enElement.innerHTML = recommendations[category].en || 'No recommendation available';
+                    zhElement.innerHTML = recommendations[category].zh || '無建議可用';
+                } else {
+                    console.error(`Missing recommendations for category: ${category}`);
+                    enElement.innerHTML = 'Error: Recommendation not available';
+                    zhElement.innerHTML = '錯誤：建議不可用';
+                }
+            });
+            
+            // Update formData with recommendations
+            formData.recommendations = {
+                fertilizer: recommendations.fertilizer?.en || '',
+                treatment: recommendations.treatment?.en || '',
+                ageSpecific: recommendations.ageSpecific?.en || '',
+                water: recommendations.water?.en || '',
+                soil: recommendations.soil?.en || '',
+                pest: recommendations.pest?.en || '',
+                rotation: recommendations.rotation?.en || '',
+                seasonal: recommendations.seasonal?.en || ''
+            };
+            
+            // Show results
+            console.log('Showing results');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            toggleLanguage(currentLanguage);
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+            
+            // Submit to Google Sheets
+            console.log('Submitting to Google Sheets');
+            await submitToGoogleSheets(formData);
+        }
+        
+        // Enhanced recommendations logic
+        function getRecommendations(cropType, cropAge, n, p, k, moisture, ph) {
+            console.log('getRecommendations called with:', { cropType, cropAge, n, p, k, moisture, ph });
+            const recommendations = {
+                fertilizer: { en: '', zh: '' },
+                treatment: { en: '', zh: '' },
+                ageSpecific: { en: '', zh: '' },
+                water: { en: '', zh: '' },
+                soil: { en: '', zh: '' },
+                pest: { en: '', zh: '' },
+                rotation: { en: '', zh: '' },
+                seasonal: { en: '', zh: '' }
+            };
+            
+            // Fertilizer Recommendations
+            switch (cropType) {
+                case 'rice':
+                    if (n < 10) {
+                        recommendations.fertilizer.en = `Nitrogen is low (${n}%). Apply urea at 100-120 kg/ha in multiple splits (30% at basal, 40% at tillering, 30% at panicle initiation) to support rice growth.`;
+                        recommendations.fertilizer.zh = `氮含量低（${n}%）。分次施用尿素100-120公斤/公頃（基肥30%，分蘗期40%，抽穗期30%）以支持稻米生長。`;
+                    } else if (n > 20) {
+                        recommendations.fertilizer.en = `Nitrogen is high (${n}%). Reduce nitrogen fertilizer to 60-80 kg/ha to prevent lodging and disease susceptibility.`;
+                        recommendations.fertilizer.zh = `氮含量高（${n}%）。減少氮肥至60-80公斤/公頃以防止倒伏和病害。`;
+                    } else {
+                        recommendations.fertilizer.en = `Nitrogen (${n}%) is optimal for rice. Apply 80-100 kg/ha in splits to maintain growth.`;
+                        recommendations.fertilizer.zh = `氮含量（${n}%）適宜稻米。分次施用80-100公斤/公頃以維持生長。`;
+                    }
+                    if (p < 7) {
+                        recommendations.fertilizer.en += ` Phosphorus is low (${p}%). Apply DAP at 40-50 kg/ha before transplanting.`;
+                        recommendations.fertilizer.zh += ` 磷含量低（${p}%）。在移栽前施用DAP 40-50公斤/公頃。`;
+                    }
+                    if (k < 7) {
+                        recommendations.fertilizer.en += ` Potassium is low (${k}%). Apply MOP at 60 kg/ha in two splits for better grain quality.`;
+                        recommendations.fertilizer.zh += ` 鉀含量低（${k}%）。分兩次施用MOP 60公斤/公頃以提高糧食品質。`;
+                    }
+                    break;
+                case 'tea':
+                    if (n < 12) {
+                        recommendations.fertilizer.en = `Nitrogen is low (${n}%). Apply nitrogen at 120-150 kg/ha annually in 4-5 splits, focusing on spring and summer.`;
+                        recommendations.fertilizer.zh = `氮含量低（${n}%）。每年施用氮肥120-150公斤/公頃，分4-5次，集中於春季和夏季。`;
+                    } else if (n > 25) {
+                        recommendations.fertilizer.en = `Nitrogen is high (${n}%). Reduce to 80-100 kg/ha to avoid bitter tea flavor.`;
+                        recommendations.fertilizer.zh = `氮含量高（${n}%）。減少至80-100公斤/公頃以避免茶葉苦味。`;
+                    }
+                    if (p < 6) {
+                        recommendations.fertilizer.en += ` Phosphorus is low (${p}%). Apply SSP at 30-40 kg P2O5/ha annually.`;
+                        recommendations.fertilizer.zh += ` 磷含量低（${p}%）。每年施用SSP 30-40公斤P2O5/公頃。`;
+                    }
+                    if (k < 10) {
+                        recommendations.fertilizer.en += ` Potassium is low (${k}%). Apply 80-100 kg K2O/ha to enhance tea quality.`;
+                        recommendations.fertilizer.zh += ` 鉀含量低（${k}%）。施用80-100公斤K2O/公頃以提高茶葉品質。`;
+                    }
+                    break;
+                case 'banana':
+                    if (n < 14) {
+                        recommendations.fertilizer.en = `Nitrogen is low (${n}%). Apply 200-250 g of nitrogen per plant annually in monthly splits.`;
+                        recommendations.fertilizer.zh = `氮含量低（${n}%）。每株每年施用200-250克氮肥，每月分次施用。`;
+                    }
+                    if (p < 10) {
+                        recommendations.fertilizer.en += ` Phosphorus is low (${p}%). Apply 50-75 g P2O5 per plant at planting and after 6 months.`;
+                        recommendations.fertilizer.zh += ` 磷含量低（${p}%）。在種植時和6個月後各施用50-75克P2O5/株。`;
+                    }
+                    if (k < 15) {
+                        recommendations.fertilizer.en += ` Potassium is low (${k}%). Apply 300-350 g K2O per plant annually for fruit development.`;
+                        recommendations.fertilizer.zh += ` 鉀含量低（${k}%）。每年施用300-350克K2O/株以促進果實發育。`;
+                    }
+                    break;
+                case 'pineapple':
+                    recommendations.fertilizer.en = `For pineapple with NPK ${n}-${p}-${k}, use a 12-6-24 fertilizer at 6-8 g per plant every 2 months.`;
+                    recommendations.fertilizer.zh = `對於NPK值為${n}-${p}-${k}的鳳梨，每2個月施用12-6-24肥料，每株6-8克。`;
+                    if (k < 20) {
+                        recommendations.fertilizer.en += ` Potassium is low (${k}%). Increase K to enhance fruit sweetness.`;
+                        recommendations.fertilizer.zh += ` 鉀含量低（${k}%）。增加鉀肥以提高果實甜度。`;
+                    }
+                    break;
+                default:
+                    recommendations.fertilizer.en = `For ${cropType} with NPK ${n}-${p}-${k}, use a balanced fertilizer (e.g., 15-15-15) adjusted to crop needs.`;
+                    recommendations.fertilizer.zh = `對於NPK值為${n}-${p}-${k}的${cropNameChinese[cropType] || cropType}，使用平衡肥料（如15-15-15）並根據作物需求調整。`;
+                    if (n < 10) recommendations.fertilizer.en += ` Increase nitrogen for vegetative growth.`; recommendations.fertilizer.zh += ` 增加氮肥以促進營養生長。`;
+                    if (p < 8) recommendations.fertilizer.en += ` Increase phosphorus for root and flower development.`; recommendations.fertilizer.zh += ` 增加磷肥以促進根系和開花。`;
+                    if (k < 12) recommendations.fertilizer.en += ` Increase potassium for quality and resistance.`; recommendations.fertilizer.zh += ` 增加鉀肥以提高品質和抗性。`;
+            }
+            
+            // Treatment Recommendations
+            if (ph < 5.5) {
+                recommendations.treatment.en = `Soil pH is acidic (${ph}). Apply agricultural lime at 1-2 tons/ha. Retest soil after 3-6 months.`;
+                recommendations.treatment.zh = `土壤pH值偏酸（${ph}）。施用農用石灰1-2噸/公頃，3-6個月後重新測試。`;
+            } else if (ph > 7.5) {
+                recommendations.treatment.en = `Soil pH is alkaline (${ph}). Apply agricultural sulfur or gypsum to lower pH gradually.`;
+                recommendations.treatment.zh = `土壤pH值偏鹼（${ph}）。施用農用硫或石膏以逐漸降低pH值。`;
+            } else {
+                recommendations.treatment.en = `Soil pH (${ph}) is optimal. Continue monitoring pH levels.`;
+                recommendations.treatment.zh = `土壤pH值（${ph}）適宜。繼續監測pH值。`;
+            }
+            if (moisture < 30) {
+                recommendations.treatment.en += ` Soil moisture is low (${moisture}%). Use organic mulch and drip irrigation to maintain moisture.`;
+                recommendations.treatment.zh += ` 土壤濕度低（${moisture}%）。使用有機覆蓋物和滴灌以保持濕度。`;
+            } else if (moisture > 70) {
+                recommendations.treatment.en += ` Soil moisture is high (${moisture}%). Improve drainage with channels or raised beds.`;
+                recommendations.treatment.zh += ` 土壤濕度高（${moisture}%）。通過排水渠或高畦改善排水。`;
+            } else {
+                recommendations.treatment.en += ` Soil moisture (${moisture}%) is adequate. Maintain current irrigation.`;
+                recommendations.treatment.zh += ` 土壤濕度（${moisture}%）適宜。維持當前灌溉。`;
+            }
+            
+            // Age-Specific Recommendations
+            switch (cropAge) {
+                case 'seedling':
+                    recommendations.ageSpecific.en = `For ${cropType} seedlings, use high-phosphorus starter fertilizer. Maintain consistent moisture and protect from extreme weather.`;
+                    recommendations.ageSpecific.zh = `對於${cropNameChinese[cropType] || cropType}幼苗，使用高磷啟動肥料。保持穩定濕度並防護極端天氣。`;
+                    break;
+                case 'vegetative':
+                    recommendations.ageSpecific.en = `During vegetative growth of ${cropType}, apply nitrogen-rich fertilizer and monitor for pests. Ensure proper spacing.`;
+                    recommendations.ageSpecific.zh = `在${cropNameChinese[cropType] || cropType}營養生長期，施用富氮肥料並監測病蟲害。確保適當間距。`;
+                    break;
+                case 'flowering':
+                    recommendations.ageSpecific.en = `For ${cropType} flowering/fruiting, increase potassium and reduce nitrogen. Use micronutrient foliar sprays.`;
+                    recommendations.ageSpecific.zh = `對於${cropNameChinese[cropType] || cropType}開花/結果期，增加鉀肥並減少氮肥。使用微量元素葉面噴劑。`;
+                    break;
+                case 'mature':
+                    recommendations.ageSpecific.en = `For mature ${cropType}, focus on potassium for quality. Use support structures to prevent lodging.`;
+                    recommendations.ageSpecific.zh = `對於成熟的${cropNameChinese[cropType] || cropType}，注重鉀肥以提高品質。使用支撐結構防止倒伏。`;
+                    break;
+                case 'harvest':
+                    recommendations.ageSpecific.en = `For ${cropType} at harvest, minimize fertilizer. Use proper harvesting techniques and plan storage.`;
+                    recommendations.ageSpecific.zh = `對於收穫期的${cropNameChinese[cropType] || cropType}，減少肥料。使用適當收穫技術並規劃儲存。`;
+                    break;
+                default:
+                    recommendations.ageSpecific.en = `No specific age-based recommendations for ${cropType} at this stage.`;
+                    recommendations.ageSpecific.zh = `目前階段無針對${cropNameChinese[cropType] || cropType}的特定年齡建議。`;
+            }
+            
+            // Water Management
+            if (cropType === 'rice') {
+                recommendations.water.en = `Rice needs standing water (2-5 cm vegetative, 5-10 cm reproductive). Use alternate wetting and drying to save water.`;
+                recommendations.water.zh = `稻米需要積水（營養期2-5厘米，生殖期5-10厘米）。採用間歇灌溉節水。`;
+            } else if (moisture < 40) {
+                recommendations.water.en = `Soil moisture is low (${moisture}%). Use drip irrigation for ${cropType} and schedule based on weather.`;
+                recommendations.water.zh = `土壤濕度低（${moisture}%）。為${cropNameChinese[cropType] || cropType}使用滴灌並根據天氣安排。`;
+            } else if (moisture > 70) {
+                recommendations.water.en = `Soil moisture is high (${moisture}%). Install drainage systems for ${cropType} to prevent root rot.`;
+                recommendations.water.zh = `土壤濕度高（${moisture}%）。為${cropNameChinese[cropType] || cropType}安裝排水系統以防根腐。`;
+            } else {
+                recommendations.water.en = `Soil moisture (${moisture}%) is optimal for ${cropType}. Use soil moisture sensors for precise irrigation.`;
+                recommendations.water.zh = `土壤濕度（${moisture}%）適宜${cropNameChinese[cropType] || cropType}。使用土壤濕度感測器精確灌溉。`;
+            }
+            
+            // Soil Health
+            recommendations.soil.en = `For ${cropType}, incorporate organic matter (e.g., compost) annually to improve soil structure and nutrient retention.`;
+            recommendations.soil.zh = `為${cropNameChinese[cropType] || cropType}每年添加有機質（如堆肥）以改善土壤結構和養分保持。`;
+            if (ph < 5.5 || ph > 7.5) {
+                recommendations.soil.en += ` Adjust pH as recommended to optimize nutrient availability.`;
+                recommendations.soil.zh += ` 按建議調整pH值以優化養分可用性。`;
+            }
+            if (n < 10 || p < 8 || k < 12) {
+                recommendations.soil.en += ` Conduct soil tests every 6 months to monitor nutrient levels.`;
+                recommendations.soil.zh += ` 每6個月進行土壤測試以監測養分水平。`;
+            }
+            
+            // Pest Control
+            switch (cropType) {
+                case 'rice':
+                    recommendations.pest.en = `Monitor for rice blast and stem borers. Use resistant varieties and apply neem-based biopesticides if needed.`;
+                    recommendations.pest.zh = `監測稻瘟病和莖螟蟲。使用抗病品種，必要時施用苦楝基生物農藥。`;
+                    break;
+                case 'tea':
+                    recommendations.pest.en = `Watch for tea green leafhoppers. Use yellow sticky traps and apply organic insecticides like pyrethrin.`;
+                    recommendations.pest.zh = `注意茶綠葉蟬。使用黃色粘蟲板並施用有機殺蟲劑如除蟲菊酯。`;
+                    break;
+                case 'banana':
+                    recommendations.pest.en = `Check for banana weevils and fusarium wilt. Use pheromone traps and ensure clean planting material.`;
+                    recommendations.pest.zh = `檢查香蕉象鼻蟲和鐮刀菌萎凋病。使用信息素陷阱並確保清潔種植材料。`;
+                    break;
+                default:
+                    recommendations.pest.en = `For ${cropType}, regularly inspect for common pests. Use integrated pest management (IPM) with cultural, biological, and chemical controls.`;
+                    recommendations.pest.zh = `對於${cropNameChinese[cropType] || cropType}，定期檢查常見病蟲害。使用綜合蟲害管理（IPM），包括文化、生物和化學控制。`;
+            }
+            
+            // Crop Rotation
+            recommendations.rotation.en = `Rotate ${cropType} with legumes (e.g., soybeans) or cover crops (e.g., clover) to improve soil fertility and break pest cycles.`;
+            recommendations.rotation.zh = `將${cropNameChinese[cropType] || cropType}與豆科植物（如大豆）或覆蓋作物（如三葉草）輪作，以改善土壤肥力和打破病蟲害週期。`;
+            if (cropType === 'rice') {
+                recommendations.rotation.en += ` Consider rice-fish or rice-duck systems for integrated farming benefits.`;
+                recommendations.rotation.zh += ` 考慮稻魚或稻鴨系統以獲得綜合農業效益。`;
+            }
+            
+            // Seasonal Recommendations
+            const currentMonth = new Date().getMonth() + 1;
+            if (currentMonth >= 3 && currentMonth <= 5) {
+                recommendations.seasonal.en = `Spring: Prepare fields for ${cropType} planting. Ensure proper drainage during rainy periods.`;
+                recommendations.seasonal.zh = `春季：為${cropNameChinese[cropType] || cropType}種植準備田地。雨季確保良好排水。`;
+            } else if (currentMonth >= 6 && currentMonth <= 8) {
+                recommendations.seasonal.en = `Summer: Monitor ${cropType} for heat stress and increase irrigation frequency. Apply shade nets if needed.`;
+                recommendations.seasonal.zh = `夏季：監測${cropNameChinese[cropType] || cropType}的熱應激並增加灌溉頻率。必要時使用遮陽網。`;
+            } else if (currentMonth >= 9 && currentMonth <= 11) {
+                recommendations.seasonal.en = `Autumn: Optimal for ${cropType} growth. Apply fertilizers and monitor for pests before cooler weather.`;
+                recommendations.seasonal.zh = `秋季：${cropNameChinese[cropType] || cropType}生長的最佳時期。在天氣轉涼前施肥並監測病蟲害。`;
+            } else {
+                recommendations.seasonal.en = `Winter: Protect ${cropType} from cold stress with mulching or greenhouses. Reduce watering frequency.`;
+                recommendations.seasonal.zh = `冬季：使用覆蓋物或溫室保護${cropNameChinese[cropType] || cropType}免受寒冷應激。減少澆水頻率。`;
+            }
+            
+            console.log('Returning recommendations:', recommendations);
+            return recommendations;
+        }
+        
+        // Initialize
+        console.log('Initializing page');
+        toggleLanguage('en');
+    </script>
+</body>
+</html>
