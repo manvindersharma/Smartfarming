@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICE-Farm Field Planning System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .map-section {
+            flex: 2;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .controls-section {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .area-display {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 2px solid #27ae60;
+        }
+
+        .area-display strong {
+            color: #27ae60;
+            font-size: 18px;
+        }
+
+        .recommendations {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .recommendations h4 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .rec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .rec-item:last-child {
+            border-bottom: none;
+        }
+
+        .rec-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .rec-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #0c5460;
+            font-weight: 600;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .crop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .crop-card {
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .crop-card:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+
+        .crop-card.selected {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+
+        .crop-card img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+        }
+
+        .crop-card span {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                padding: 10px;
+            }
+            
+            .map-section {
+                height: 400px;
+                order: 2;
+            }
+            
+            .controls-section {
+                order: 1;
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="header">
+                <h1>🌾 Farm Planning System</h1>
+                <p>Click on map to define your field boundaries</p>
+            </div>
+
+            <div class="status-info" id="statusInfo">
+                Click on the map to start marking your field boundaries
+            </div>
+
+            <div class="control-group">
+                <h3>📍 Field Mapping</h3>
+                <button class="btn btn-primary" onclick="startDrawing()">Start Field Selection</button>
+                <button class="btn btn-danger" onclick="clearField()">Clear Field</button>
+                <button class="btn btn-success" onclick="completeField()">Complete Field</button>
+            </div>
+
+            <div class="area-display" id="areaDisplay" style="display: none;">
+                <div>Selected Area</div>
+                <strong id="areaValue">0 acres</strong>
+            </div>
+
+            <div class="control-group" id="cropSelection" style="display: none;">
+                <h3>🌱 Select Crop</h3>
+                <div class="crop-grid">
+                    <div class="crop-card" onclick="selectCrop('wheat')" data-crop="wheat">
+                        <div>🌾</div>
+                        <span>Wheat</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('corn')" data-crop="corn">
+                        <div>🌽</div>
+                        <span>Corn</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('rice')" data-crop="rice">
+                        <div>🌾</div>
+                        <span>Rice</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('soybean')" data-crop="soybean">
+                        <div>🫘</div>
+                        <span>Soybean</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('potato')" data-crop="potato">
+                        <div>🥔</div>
+                        <span>Potato</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('tomato')" data-crop="tomato">
+                        <div>🍅</div>
+                        <span>Tomato</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group" id="seasonSelection" style="display: none;">
+                <h3>📅 Planting Season</h3>
+                <select id="season" onchange="updateRecommendations()">
+                    <option value="">Select Season</option>
+                    <option value="spring">Spring</option>
+                    <option value="summer">Summer</option>
+                    <option value="fall">Fall</option>
+                    <option value="winter">Winter</option>
+                </select>
+            </div>
+
+            <div class="recommendations" id="recommendations" style="display: none;">
+                <h4>📊 Agricultural Recommendations</h4>
+                <div id="recommendationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let fieldPolygon = null;
+        let drawingMode = false;
+        let fieldPoints = [];
+        let selectedCrop = null;
+        let fieldArea = 0;
+
+        // Crop data with requirements per acre (costs in Indian Rupees)
+        const cropData = {
+            wheat: {
+                seeds: "90-120 lbs",
+                fertilizer: "100-150 lbs NPK",
+                water: "20-25 inches",
+                spacing: "6-8 inches rows",
+                season: ["fall", "spring"],
+                yield: "40-80 bushels",
+                cost: "₹15000-20000"
+            },
+            corn: {
+                seeds: "20-25 lbs",
+                fertilizer: "150-200 lbs NPK",
+                water: "20-30 inches",
+                spacing: "30 inches rows",
+                season: ["spring", "summer"],
+                yield: "150-200 bushels",
+                cost: "₹25000-35000"
+            },
+            rice: {
+                seeds: "80-100 lbs",
+                fertilizer: "120-180 lbs NPK",
+                water: "40-50 inches",
+                spacing: "Flooded fields",
+                season: ["spring", "summer"],
+                yield: "120-180 bushels",
+                cost: "₹30000-45000"
+            },
+            soybean: {
+                seeds: "50-70 lbs",
+                fertilizer: "50-80 lbs PK",
+                water: "15-25 inches",
+                spacing: "7-15 inches rows",
+                season: ["spring", "summer"],
+                yield: "40-70 bushels",
+                cost: "₹18000-25000"
+            },
+            potato: {
+                seeds: "1500-2000 lbs",
+                fertilizer: "200-300 lbs NPK",
+                water: "20-30 inches",
+                spacing: "12 inches apart",
+                season: ["spring", "fall"],
+                yield: "300-500 cwt",
+                cost: "₹65000-95000"
+            },
+            tomato: {
+                seeds: "0.25-0.5 lbs",
+                fertilizer: "250-350 lbs NPK",
+                water: "25-35 inches",
+                spacing: "18-36 inches",
+                season: ["spring", "summer"],
+                yield: "20-40 tons",
+                cost: "₹120000-200000"
+            }
+        };
+
+        // Initialize map
+        function initMap() {
+            // Default to Punjab, India coordinates
+            map = L.map('map').setView([30.7333, 76.7794], 10);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add click handler for drawing
+            map.on('click', onMapClick);
+        }
+
+        function startDrawing() {
+            drawingMode = true;
+            fieldPoints = [];
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+            }
+            updateStatus("Click on the map to mark field boundaries. Click 'Complete Field' when done.");
+        }
+
+        function onMapClick(e) {
+            if (!drawingMode) return;
+
+            fieldPoints.push([e.latlng.lat, e.latlng.lng]);
+            
+            // Add marker for each point
+            L.circleMarker([e.latlng.lat, e.latlng.lng], {
+                radius: 5,
+                fillColor: '#ff7800',
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+
+            updateStatus(`Point ${fieldPoints.length} added. Continue clicking to define boundaries.`);
+        }
+
+        function completeField() {
+            if (fieldPoints.length < 3) {
+                alert("Please select at least 3 points to define a field.");
+                return;
+            }
+
+            drawingMode = false;
+            
+            // Create polygon
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+            }
+            
+            fieldPolygon = L.polygon(fieldPoints, {
+                color: '#27ae60',
+                fillColor: '#27ae60',
+                fillOpacity: 0.3,
+                weight: 2
+            }).addTo(map);
+
+            // Calculate area
+            fieldArea = calculatePolygonArea(fieldPoints);
+            
+            // Update UI
+            document.getElementById('areaDisplay').style.display = 'block';
+            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ' acres';
+            document.getElementById('cropSelection').style.display = 'block';
+            
+            updateStatus("Field completed! Now select a crop to get recommendations.");
+            
+            // Fit map to polygon
+            map.fitBounds(fieldPolygon.getBounds());
+        }
+
+        function clearField() {
+            fieldPoints = [];
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+                fieldPolygon = null;
+            }
+            
+            // Clear all markers
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.CircleMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            drawingMode = false;
+            fieldArea = 0;
+            selectedCrop = null;
+            
+            // Hide UI elements
+            document.getElementById('areaDisplay').style.display = 'none';
+            document.getElementById('cropSelection').style.display = 'none';
+            document.getElementById('seasonSelection').style.display = 'none';
+            document.getElementById('recommendations').style.display = 'none';
+            
+            // Clear crop selection
+            document.querySelectorAll('.crop-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            updateStatus("Field cleared. Click 'Start Field Selection' to begin again.");
+        }
+
+        function selectCrop(crop) {
+            selectedCrop = crop;
+            
+            // Update UI
+            document.querySelectorAll('.crop-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-crop="${crop}"]`).classList.add('selected');
+            
+            document.getElementById('seasonSelection').style.display = 'block';
+            updateStatus(`${crop.charAt(0).toUpperCase() + crop.slice(1)} selected! Choose planting season for detailed recommendations.`);
+            
+            updateRecommendations();
+        }
+
+        function updateRecommendations() {
+            if (!selectedCrop || fieldArea === 0) return;
+            
+            const season = document.getElementById('season').value;
+            const crop = cropData[selectedCrop];
+            
+            let recommendations = `
+                <div class="rec-item">
+                    <span class="rec-label">Seeds Required:</span>
+                    <span class="rec-value">${multiplyRange(crop.seeds, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Fertilizer:</span>
+                    <span class="rec-value">${multiplyRange(crop.fertilizer, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Water Needed:</span>
+                    <span class="rec-value">${multiplyRange(crop.water, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Row Spacing:</span>
+                    <span class="rec-value">${crop.spacing}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Expected Yield:</span>
+                    <span class="rec-value">${multiplyRange(crop.yield, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Estimated Cost:</span>
+                    <span class="rec-value">${multiplyRange(crop.cost, fieldArea)}</span>
+                </div>
+            `;
+            
+            if (season) {
+                const suitable = crop.season.includes(season);
+                recommendations += `
+                    <div class="rec-item">
+                        <span class="rec-label">Season Suitability:</span>
+                        <span class="rec-value" style="color: ${suitable ? '#27ae60' : '#e74c3c'}">
+                            ${suitable ? '✅ Suitable' : '❌ Not Recommended'}
+                        </span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('recommendationsList').innerHTML = recommendations;
+            document.getElementById('recommendations').style.display = 'block';
+        }
+
+        function multiplyRange(range, multiplier) {
+            if (range.includes('$')) {
+                // Handle cost ranges
+                const numbers = range.match(/\d+/g);
+                if (numbers.length === 2) {
+                    const min = parseInt(numbers[0]) * multiplier;
+                    const max = parseInt(numbers[1]) * multiplier;
+                    return `$${min.toFixed(0)}-${max.toFixed(0)}`;
+                }
+            } else {
+                // Handle other ranges
+                const numbers = range.match(/\d+/g);
+                if (numbers && numbers.length >= 1) {
+                    if (numbers.length === 2) {
+                        const min = parseFloat(numbers[0]) * multiplier;
+                        const max = parseFloat(numbers[1]) * multiplier;
+                        const unit = range.replace(/[\d\-\s]/g, '');
+                        return `${min.toFixed(1)}-${max.toFixed(1)} ${unit}`;
+                    } else {
+                        const value = parseFloat(numbers[0]) * multiplier;
+                        const unit = range.replace(/[\d\s]/g, '');
+                        return `${value.toFixed(1)} ${unit}`;
+                    }
+                }
+            }
+            return range;
+        }
+
+        function calculatePolygonArea(points) {
+            // Simple area calculation using shoelace formula
+            // Convert to approximate acres (very rough estimation)
+            let area = 0;
+            const n = points.length;
+            
+            for (let i = 0; i < n; i++) {
+                const j = (i + 1) % n;
+                area += points[i][0] * points[j][1];
+                area -= points[j][0] * points[i][1];
+            }
+            
+            area = Math.abs(area) / 2;
+            
+            // Very rough conversion to acres (this is simplified)
+            // In reality, you'd need proper geodetic calculations
+            return area * 24710; // Approximate conversion factor
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusInfo').textContent = message;
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            initMap();
+        };
+    </script>
+</body>
+</html>
