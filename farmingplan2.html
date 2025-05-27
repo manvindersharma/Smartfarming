@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="title">DICE-Farm Field Planning System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans&family=Noto+Sans+Devanagari&family=Noto+Sans+Gurmukhi&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@7/turf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gurmukhi', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .map-section {
+            flex: 2;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .controls-section {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .btn:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+            position: relative;
+        }
+
+        select:hover .tooltip, input:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .area-display {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 2px solid #27ae60;
+        }
+
+        .area-display strong {
+            color: #27ae60;
+            font-size: 18px;
+        }
+
+        .recommendations {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .recommendations h4 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .rec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .rec-item:last-child {
+            border-bottom: none;
+        }
+
+        .rec-label {
+            font-weight: 600;
+            color: #2c3e50;
+            position: relative;
+        }
+
+        .rec-label:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .rec-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #0c5460;
+            font-weight: 600;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .crop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .crop-card {
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .crop-card:hover {
+            border-color: #3498db;
+            background: #f5f9fa;
+        }
+
+        .crop-card:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .crop-card.selected {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+
+        .crop-card span {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            width: 200px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .accordion {
+            margin-bottom: 20px;
+        }
+
+        .accordion-header {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion-header:hover {
+            background: #2980b9;
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            border: 2px solid #3498db;
+            border-top: none;
+        }
+
+        .accordion-content.active {
+            display: block;
+        }
+
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .calendar-table th, .calendar-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ecf0f1;
+        }
+
+        .calendar-table th {
+            background: #3498db;
+            color: white;
+        }
+
+        .calendar-table td {
+            background: #f8f9fa;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                padding: 10px;
+            }
+            
+            .map-section {
+                height: 400px;
+                order: 2;
+            }
+            
+            .controls-section {
+                order: 1;
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="header">
+                <h1 data-i18n="header_title">🌾 Farm Planning System</h1>
+                <p data-i18n="header_subtitle">Click on map to define your field boundaries</p>
+            </div>
+
+            <div class="control-group">
+                <h3 data-i18n="language_selection">🌐 Select Language</h3>
+                <select id="language" onchange="updateLanguage()">
+                    <option value="en" data-i18n="lang_english">English</option>
+                    <option value="hi" data-i18n="lang_hindi">Hindi</option>
+                    <option value="pa" data-i18n="lang_punjabi">Punjabi</option>
+                </select>
+                <span class="tooltip" data-i18n="tooltip_language">Choose your preferred language for the interface</span>
+            </div>
+
+            <div class="status-info" id="statusInfo" data-i18n="status_initial">
+                Click on the map to start marking your field boundaries
+            </div>
+
+            <div class="control-group">
+                <h3 data-i18n="field_mapping">📍 Field Mapping</h3>
+                <button class="btn btn-primary" onclick="startDrawing()" data-i18n="start_field">
+                    Start Field Selection
+                    <span class="tooltip" data-i18n="tooltip_start_field">Click to begin marking your field boundaries on the map</span>
+                </button>
+                <button class="btn btn-danger" onclick="clearField()" data-i18n="clear_field">
+                    Clear Field
+                    <span class="tooltip" data-i18n="tooltip_clear_field">Remove all marked points and start over</span>
+                </button>
+                <button class="btn btn-success" onclick="completeField()" data-i18n="complete_field">
+                    Complete Field
+                    <span class="tooltip" data-i18n="tooltip_complete_field">Finish drawing the field and calculate its area</span>
+                </button>
+            </div>
+
+            <div class="area-display" id="areaDisplay" style="display: none;">
+                <div data-i18n="selected_area">Selected Area</div>
+                <strong id="areaValue">0 acres</strong>
+                <select id="areaUnit" onchange="updateAreaDisplay()">
+                    <option value="acres" data-i18n="unit_acres">Acres</option>
+                    <option value="hectares" data-i18n="unit_hectares">Hectares</option>
+                    <option value="yards" data-i18n="unit_yards">Square Yards</option>
+                </select>
+                <span class="tooltip" data-i18n="tooltip_area_unit">Select the unit to display the field area</span>
+            </div>
+
+            <div class="control-group" id="cropSelection" style="display: none;">
+                <h3 data-i18n="select_crop">🌱 Select Crop</h3>
+                <div class="crop-grid">
+                    <div class="crop-card" onclick="selectCrop('wheat')" data-crop="wheat">
+                        <div>🌾</div>
+                        <span data-i18n="crop_wheat">Wheat</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_wheat">Wheat is a staple crop, best suited for fall or spring</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('corn')" data-crop="corn">
+                        <div>🌽</div>
+                        <span data-i18n="crop_corn">Corn</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_corn">Corn thrives in warm seasons like spring and summer</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('rice')" data-crop="rice">
+                        <div>🌾</div>
+                        <span data-i18n="crop_rice">Rice</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_rice">Rice requires flooded fields, ideal for summer</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('soybean')" data-crop="soybean">
+                        <div>🫘</div>
+                        <span data-i18n="crop_soybean">Soybean</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_soybean">Soybean is a versatile crop for spring and summer</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('potato')" data-crop="potato">
+                        <div>🥔</div>
+                        <span data-i18n="crop_potato">Potato</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_potato">Potatoes need well-drained soil, suitable for spring or fall</span>
+                    </div>
+                    <div class="crop-card" onclick="selectCrop('tomato')" data-crop="tomato">
+                        <div>🍅</div>
+                        <span data-i18n="crop_tomato">Tomato</span>
+                        <span class="tooltip" data-i18n="tooltip_crop_tomato">Tomatoes are high-value, best for spring and summer</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion" id="cropCalendar" style="display: none;">
+                <div class="accordion-header" onclick="toggleAccordion('calendarContent')">
+                    <span data-i18n="crop_calendar_title">🌾 Crop Calendar</span>
+                    <span>▼</span>
+                </div>
+                <div class="accordion-content" id="calendarContent">
+                    <table class="calendar-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="crop">Crop</th>
+                                <th data-i18n="planting_months">Planting Months</th>
+                                <th data-i18n="harvesting_months">Harvesting Months</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion('guideContent')">
+                    <span data-i18n="guide_title">📖 Guide for New Farmers</span>
+                    <span>▼</span>
+                </div>
+                <div class="accordion-content" id="guideContent">
+                    <ul>
+                        <li data-i18n="guide_crop_selection">Choose crops based on your soil type and season. Test your soil to know its nutrients.</li>
+                        <li data-i18n="guide_soil_testing">Get a soil test to check NPK (Nitrogen, Phosphorus, Potassium) levels for better fertilizer use.</li>
+                        <li data-i18n="guide_cost_management">Plan costs for seeds, fertilizers, and water to avoid losses. Compare expected yield with market prices.</li>
+                        <li data-i18n="guide_crop_rotation">Rotate crops (e.g., wheat followed by pulses) to maintain soil health and reduce pests.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="control-group" id="seasonSelection" style="display: none;">
+                <h3 data-i18n="planting_season">📅 Planting Season</h3>
+                <select id="season" onchange="updateRecommendations()">
+                    <option value="" data-i18n="select_season">Select Season</option>
+                    <option value="spring" data-i18n="season_spring">Spring</option>
+                    <option value="summer" data-i18n="season_summer">Summer</option>
+                    <option value="fall" data-i18n="season_fall">Fall</option>
+                    <option value="winter" data-i18n="season_winter">Winter</option>
+                </select>
+                <span class="tooltip" data-i18n="tooltip_season">Select the season when you plan to plant your crop</span>
+            </div>
+
+            <div class="recommendations" id="recommendations" style="display: none;">
+                <h4 data-i18n="recommendations_title">📊 Agricultural Recommendations</h4>
+                <div id="recommendationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let fieldPolygon = null;
+        let drawingMode = false;
+        let fieldPoints = [];
+        let selectedCrop = null;
+        let fieldArea = 0;
+        let currentLanguage = 'en';
+
+        const translations = {
+            en: {
+                title: "DICE-Farm Field Planning System",
+                header_title: "🌾 Farm Planning System",
+                header_subtitle: "Click on map to define your field boundaries",
+                language_selection: "🌐 Select Language",
+                lang_english: "English",
+                lang_hindi: "Hindi",
+                lang_punjabi: "Punjabi",
+                status_initial: "Click on the map to start marking your field boundaries",
+                status_drawing: "Click on the map to mark field boundaries. Click 'Complete Field' when done.",
+                status_point_added: "Point {n} added. Continue clicking to define boundaries.",
+                status_field_completed: "Field completed! Now select a crop to get recommendations.",
+                status_field_cleared: "Field cleared. Click 'Start Field Selection' to begin again.",
+                status_crop_selected: "{crop} selected! Choose planting season for detailed recommendations.",
+                field_mapping: "📍 Field Mapping",
+                start_field: "Start Field Selection",
+                clear_field: "Clear Field",
+                complete_field: "Complete Field",
+                selected_area: "Selected Area",
+                unit_acres: "Acres",
+                unit_hectares: "Hectares",
+                unit_yards: "Square Yards",
+                select_crop: "🌱 Select Crop",
+                crop_wheat: "Wheat",
+                crop_corn: "Corn",
+                crop_rice: "Rice",
+                crop_soybean: "Soybean",
+                crop_potato: "Potato",
+                crop_tomato: "Tomato",
+                planting_season: "📅 Planting Season",
+                select_season: "Select Season",
+                season_spring: "Spring",
+                season_summer: "Summer",
+                season_fall: "Fall",
+                season_winter: "Winter",
+                recommendations_title: "📊 Agricultural Recommendations",
+                seeds_required: "Seeds Required",
+                fertilizer: "Fertilizer",
+                water_needed: "Water Needed",
+                row_spacing: "Row Spacing",
+                expected_yield: "Expected Yield",
+                estimated_cost: "Estimated Cost",
+                estimated_revenue: "Estimated Revenue",
+                estimated_profit: "Estimated Profit",
+                season_suitability: "Season Suitability",
+                suitable: "✅ Suitable",
+                not_recommended: "❌ Not Recommended",
+                next_season_crops: "Next Season Crops",
+                error_min_points: "Please select at least 3 points to define a field.",
+                error_invalid_polygon: "Invalid field shape: The boundaries intersect. Please redefine the field.",
+                crop_calendar_title: "🌾 Crop Calendar",
+                crop: "Crop",
+                planting_months: "Planting Months",
+                harvesting_months: "Harvesting Months",
+                guide_title: "📖 Guide for New Farmers",
+                guide_crop_selection: "Choose crops based on your soil type and season. Test your soil to know its nutrients.",
+                guide_soil_testing: "Get a soil test to check NPK (Nitrogen, Phosphorus, Potassium) levels for better fertilizer use.",
+                guide_cost_management: "Plan costs for seeds, fertilizers, and water to avoid losses. Compare expected yield with market prices.",
+                guide_crop_rotation: "Rotate crops (e.g., wheat followed by pulses) to maintain soil health and reduce pests.",
+                tooltip_language: "Choose your preferred language for the interface",
+                tooltip_start_field: "Click to begin marking your field boundaries on the map",
+                tooltip_clear_field: "Remove all marked points and start over",
+                tooltip_complete_field: "Finish drawing the field and calculate its area",
+                tooltip_area_unit: "Select the unit to display the field area",
+                tooltip_crop_wheat: "Wheat is a staple crop, best suited for fall or spring",
+                tooltip_crop_corn: "Corn thrives in warm seasons like spring and summer",
+                tooltip_crop_rice: "Rice requires flooded fields, ideal for summer",
+                tooltip_crop_soybean: "Soybean is a versatile crop for spring and summer",
+                tooltip_crop_potato: "Potatoes need well-drained soil, suitable for spring or fall",
+                tooltip_crop_tomato: "Tomatoes are high-value, best for spring and summer",
+                tooltip_season: "Select the season when you plan to plant your crop",
+                tooltip_seeds_required: "Amount of seeds needed per acre for planting",
+                tooltip_fertilizer: "NPK (Nitrogen, Phosphorus, Potassium) fertilizer needed per acre",
+                tooltip_water_needed: "Water required per acre during the growing season",
+                tooltip_row_spacing: "Recommended spacing between rows for optimal growth",
+                tooltip_expected_yield: "Estimated crop production per acre",
+                tooltip_estimated_cost: "Total cost per acre including seeds, fertilizer, and water",
+                tooltip_estimated_revenue: "Expected income from selling the crop per acre",
+                tooltip_estimated_profit: "Estimated profit per acre after subtracting costs",
+                tooltip_season_suitability: "Whether the crop is suitable for the selected season",
+                tooltip_next_season_crops: "Recommended crops to plant in the next season for soil health"
+            },
+            hi: {
+                title: "DICE-खेत नियोजन प्रणाली",
+                header_title: "🌾 खेत नियोजन प्रणाली",
+                header_subtitle: "खेत की सीमाएँ निर्धारित करने के लिए नक्शे पर क्लिक करें",
+                language_selection: "🌐 भाषा चुनें",
+                lang_english: "अंग्रेजी",
+                lang_hindi: "हिन्दी",
+                lang_punjabi: "पंजाबी",
+                status_initial: "खेत की सीमाएँ चिह्नित करने के लिए नक्शे पर क्लिक करें",
+                status_drawing: "खेत की सीमाएँ चिह्नित करने के लिए नक्शे पर क्लिक करें। समाप्त होने पर 'खेत पूरा करें' पर क्लिक करें।",
+                status_point_added: "बिंदु {n} जोड़ा गया। सीमाएँ निर्धारित करने के लिए क्लिक करना जारी रखें।",
+                status_field_completed: "खेत पूरा हुआ! अब सिफारिशें प्राप्त करने के लिए फसल चुनें।",
+                status_field_cleared: "खेत साफ किया गया। फिर से शुरू करने के लिए 'खेत चयन शुरू करें' पर क्लिक करें।",
+                status_crop_selected: "{crop} चुना गया! विस्तृत सिफारिशों के लिए रोपण का मौसम चुनें।",
+                field_mapping: "📍 खेत मानचित्रण",
+                start_field: "खेत चयन शुरू करें",
+                clear_field: "खेत साफ करें",
+                complete_field: "खेत पूरा करें",
+                selected_area: "चयनित क्षेत्र",
+                unit_acres: "एकड़",
+                unit_hectares: "हेक्टेयर",
+                unit_yards: "वर्ग यार्ड",
+                select_crop: "🌱 फसल चुनें",
+                crop_wheat: "गेहूं",
+                crop_corn: "मक्का",
+                crop_rice: "चावल",
+                crop_soybean: "सोयाबीन",
+                crop_potato: "आलू",
+                crop_tomato: "टमाटर",
+                planting_season: "📅 रोपण का मौसम",
+                select_season: "मौसम चुनें",
+                season_spring: "वसंत",
+                season_summer: "ग्रीष्म",
+                season_fall: "पतझड़",
+                season_winter: "शीत",
+                recommendations_title: "📊 कृषि सिफारिशें",
+                seeds_required: "आवश्यक बीज",
+                fertilizer: "उर्वरक",
+                water_needed: "आवश्यक पानी",
+                row_spacing: "पंक्ति अंतर",
+                expected_yield: "अपेक्षित उपज",
+                estimated_cost: "अनुमानित लागत",
+                estimated_revenue: "अनुमानित राजस्व",
+                estimated_profit: "अनुमानित लाभ",
+                season_suitability: "मौसम उपयुक्तता",
+                suitable: "✅ उपयुक्त",
+                not_recommended: "❌ अनुशंसित नहीं",
+                next_season_crops: "अगले मौसम की फसलें",
+                error_min_points: "कृपया खेत को परिभाषित करने के लिए कम से कम 3 बिंदु चुनें।",
+                error_invalid_polygon: "अमान्य खेत का आकार: सीमाएँ एक-दूसरे को काटती हैं। कृपया खेत को फिर से परिभाषित करें।",
+                crop_calendar_title: "🌾 फसल कैलेंडर",
+                crop: "फसल",
+                planting_months: "रोपण महीने",
+                harvesting_months: "कटाई महीने",
+                guide_title: "📖 नए किसानों के लिए गाइड",
+                guide_crop_selection: "अपने मिट्टी के प्रकार और मौसम के आधार पर फसल चुनें। मिट्टी की पोषक तत्वों को जानने के लिए उसका परीक्षण करें।",
+                guide_soil_testing: "बेहतर उर्वरक उपयोग के लिए मिट्टी का परीक्षण करें ताकि NPK (नाइट्रोजन, फॉस्फोरस, पोटैशियम) स्तर की जाँच हो सके।",
+                guide_cost_management: "नुकसान से बचने के लिए बीज, उर्वरक और पानी की लागत की योजना बनाएँ। अपेक्षित उपज की तुलना बाजार मूल्यों से करें।",
+                guide_crop_rotation: "मिट्टी के स्वास्थ्य को बनाए रखने और कीटों को कम करने के लिए फसलों का रोटेशन करें (उदाहरण के लिए, गेहूं के बाद दालें)।",
+                tooltip_language: "इंटरफेस के लिए अपनी पसंदीदा भाषा चुनें",
+                tooltip_start_field: "नक्शे पर खेत की सीमाएँ चिह्नित करना शुरू करने के लिए क्लिक करें",
+                tooltip_clear_field: "सभी चिह्नित बिंदुओं को हटाएँ और फिर से शुरू करें",
+                tooltip_complete_field: "खेत को पूरा करें और उसका क्षेत्रफल गणना करें",
+                tooltip_area_unit: "खेत के क्षेत्रफल को प्रदर्शित करने के लिए इकाई चुनें",
+                tooltip_crop_wheat: "गेहूं एक मुख्य फसल है, जो पतझड़ या वसंत के लिए सबसे उपयुक्त है",
+                tooltip_crop_corn: "मक्का गर्म मौसम जैसे वसंत और ग्रीष्म में अच्छा होता है",
+                tooltip_crop_rice: "चावल को बाढ़ वाले खेतों की आवश्यकता होती है, ग्रीष्म के लिए आदर्श",
+                tooltip_crop_soybean: "सोयाबीन एक बहुमुखी फसल है, जो वसंत और ग्रीष्म के लिए उपयुक्त है",
+                tooltip_crop_potato: "आलू को अच्छी तरह से जल निकासी वाली मिट्टी की आवश्यकता होती है, वसंत या पतझड़ के लिए उपयुक्त",
+                tooltip_crop_tomato: "टमाटर उच्च मूल्य की फसल है, जो वसंत और ग्रीष्म के लिए सर्वोत्तम है",
+                tooltip_season: "वह मौसम चुनें जब आप अपनी फसल बोने की योजना बना रहे हैं",
+                tooltip_seeds_required: "रोपण के लिए प्रति एकड़ आवश्यक बीज की मात्रा",
+                tooltip_fertilizer: "प्रति एकड़ आवश्यक NPK (नाइट्रोजन, फॉस्फोरस, पोटैशियम) उर्वरक",
+                tooltip_water_needed: "बढ़ते मौसम के दौरान प्रति एकड़ आवश्यक पानी",
+                tooltip_row_spacing: "इष्टतम वृद्धि के लिए पंक्तियों के बीच अनुशंसित दूरी",
+                tooltip_expected_yield: "प्रति एकड़ अनुमानित फसल उत्पादन",
+                tooltip_estimated_cost: "बीज, उर्वरक और पानी सहित प्रति एकड़ कुल लागत",
+                tooltip_estimated_revenue: "प्रति एकड़ फसल बेचने से अपेक्षित आय",
+                tooltip_estimated_profit: "लागत घटाने के बाद प्रति एकड़ अनुमानित लाभ",
+                tooltip_season_suitability: "चुने गए मौसम के लिए फसल उपयुक्त है या नहीं",
+                tooltip_next_season_crops: "मिट्टी के स्वास्थ्य के लिए अगले मौसम में बोने के लिए अनुशंसित फसलें"
+            },
+            pa: {
+                title: "DICE-ਖੇਤ ਯੋਜਨਾ ਸਿਸਟਮ",
+                header_title: "🌾 ਖੇਤ ਯੋਜਨਾ ਸਿਸਟਮ",
+                header_subtitle: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ",
+                language_selection: "🌐 ਭਾਸ਼ਾ ਚੁਣੋ",
+                lang_english: "ਅੰਗਰੇਜ਼ੀ",
+                lang_hindi: "ਹਿੰਦੀ",
+                lang_punjabi: "ਪੰਜਾਬੀ",
+                status_initial: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ",
+                status_drawing: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ। ਮੁਕੰਮਲ ਹੋਣ 'ਤੇ 'ਖੇਤ ਮੁਕੰਮਲ ਕਰੋ' 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+                status_point_added: "ਬਿੰਦੂ {n} ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ। ਸੀਮਾਵਾਂ ਨਿਸ਼ਚਿਤ ਕਰਨ ਲਈ ਕਲਿੱਕ ਕਰਦੇ ਰਹੋ।",
+                status_field_completed: "ਖੇਤ ਮੁਕੰਮਲ ਹੋਇਆ! ਹੁਣ ਸਿਫਾਰਸ਼ਾਂ ਪ੍ਰਾਪਤ ਕਰਨ ਲਈ ਫਸਲ ਚੁਣੋ।",
+                status_field_cleared: "ਖੇਤ ਸਾਫ ਕੀਤਾ ਗਿਆ। ਦੁਬਾਰਾ ਸ਼ੁਰੂ ਕਰਨ ਲਈ 'ਖੇਤ ਚੋਣ ਸ਼ੁਰੂ ਕਰੋ' 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+                status_crop_selected: "{crop} ਚੁਣਿਆ ਗਿਆ! ਵਿਸਤ੍ਰਿਤ ਸਿਫਾਰਸ਼ਾਂ ਲਈ ਬਿਜਾਈ ਦਾ ਮੌਸਮ ਚੁਣੋ।",
+                field_mapping: "📍 ਖੇਤ ਨਕਸ਼ੇਬੰਦੀ",
+                start_field: "ਖੇਤ ਚੋਣ ਸ਼ੁਰੂ ਕਰੋ",
+                clear_field: "ਖੇਤ ਸਾਫ ਕਰੋ",
+                complete_field: "ਖੇਤ ਮੁਕੰਮਲ ਕਰੋ",
+                selected_area: "ਚੁਣਿਆ ਖੇਤਰ",
+                unit_acres: "ਏਕੜ",
+                unit_hectares: "ਹੈਕਟੇਅਰ",
+                unit_yards: "ਵਰਗ ਯਾਰਡ",
+                select_crop: "🌱 ਫਸਲ ਚੁਣੋ",
+                crop_wheat: "ਕਣਕ",
+                crop_corn: "ਮੱਕੀ",
+                crop_rice: "ਚੌਲ",
+                crop_soybean: "ਸੋਇਆਬੀਨ",
+                crop_potato: "ਆਲੂ",
+                crop_tomato: "ਟਮਾਟਰ",
+                planting_season: "📅 ਬਿਜਾਈ ਦਾ ਮੌਸਮ",
+                select_season: "ਮੌਸਮ ਚੁਣੋ",
+                season_spring: "ਬਸੰਤ",
+                season_summer: "ਗਰਮੀ",
+                season_fall: "ਪਤਝੜ",
+                season_winter: "ਸਰਦੀ",
+                recommendations_title: "📊 ਖੇਤੀ ਸਿਫਾਰਸ਼ਾਂ",
+                seeds_required: "ਲੋੜੀਂਦੇ ਬੀਜ",
+                fertilizer: "ਖਾਦ",
+                water_needed: "ਲੋੜੀਂਦਾ ਪਾਣੀ",
+                row_spacing: "ਕਤਾਰ ਦੀ ਦੂਰੀ",
+                expected_yield: "ਉਮੀਦੀ ਉਪਜ",
+                estimated_cost: "ਅਨੁਮਾਨਿਤ ਲਾਗਤ",
+                estimated_revenue: "ਅਨੁਮਾਨਿਤ ਮਾਲੀਆ",
+                estimated_profit: "ਅਨੁਮਾਨਿਤ ਲਾਭ",
+                season_suitability: "ਮੌਸਮ ਅਨੁਕੂਲਤਾ",
+                suitable: "✅ ਅਨੁਕੂਲ",
+                not_recommended: "❌ ਸਿਫਾਰਸ਼ ਨਹੀਂ",
+                next_season_crops: "ਅਗਲੇ ਮੌਸਮ ਦੀਆਂ ਫਸਲਾਂ",
+                error_min_points: "ਕਿਰਪਾ ਕਰਕੇ ਖੇਤ ਨੂੰ ਪਰਿਭਾਸ਼ਿਤ ਕਰਨ ਲਈ ਘੱਟੋ-ਘੱਟ 3 ਬਿੰਦੂ ਚੁਣੋ।",
+                error_invalid_polygon: "ਅਵੈਧ ਖੇਤ ਦਾ ਆਕਾਰ: ਸੀਮਾਵਾਂ ਇੱਕ ਦੂਜੇ ਨੂੰ ਕੱਟਦੀਆਂ ਹਨ। ਕਿਰਪਾ ਕਰਕੇ ਖੇਤ ਨੂੰ ਮੁੜ ਪਰਿਭਾਸ਼ਿਤ ਕਰੋ।",
+                crop_calendar_title: "🌾 ਫਸਲ ਕੈਲੰਡਰ",
+                crop: "ਫਸਲ",
+                planting_months: "ਬਿਜਾਈ ਦੇ ਮਹੀਨੇ",
+                harvesting_months: "ਕਟਾਈ ਦੇ ਮਹੀਨੇ",
+                guide_title: "📖 ਨਵੇਂ ਕਿਸਾਨਾਂ ਲਈ ਗਾਈਡ",
+                guide_crop_selection: "ਆਪਣੀ ਮਿੱਟੀ ਦੀ ਕਿਸਮ ਅਤੇ ਮੌਸਮ ਦੇ ਅਧਾਰ 'ਤੇ ਫਸਲ ਚੁਣੋ। ਮਿੱਟੀ ਦੇ ਪੌਸ਼ਟਿਕ ਤੱਤਾਂ ਨੂੰ ਜਾਣਨ ਲਈ ਇਸ ਦਾ ਟੈਸਟ ਕਰਵਾਓ।",
+                guide_soil_testing: "ਬਿਹਤਰ ਖਾਦ ਦੀ ਵਰਤੋਂ ਲਈ ਮਿੱਟੀ ਦਾ ਟੈਸਟ ਕਰਵਾਓ ਤਾਂ ਜੋ NPK (ਨਾਈਟ੍ਰੋਜਨ, ਫਾਸਫੋਰਸ, ਪੋਟਾਸ਼ੀਅਮ) ਪੱਧਰ ਦੀ ਜਾਂਚ ਹੋ ਸਕੇ।",
+                guide_cost_management: "ਨੁਕਸਾਨ ਤੋਂ ਬਚਣ ਲਈ ਬੀਜ, ਖਾਦ ਅਤੇ ਪਾਣੀ ਦੀ ਲਾਗਤ ਦੀ ਯੋਜਨਾ ਬਣਾਓ। ਅਨੁਮਾਨਿਤ ਉਪਜ ਦੀ ਤੁਲਨਾ ਬਜ਼ਾਰ ਮੁੱਲ ਨਾਲ ਕਰੋ।",
+                guide_crop_rotation: "ਮਿੱਟੀ ਦੀ ਸਿਹਤ ਨੂੰ ਬਣਾਈ ਰੱਖਣ ਅਤੇ ਕੀਟਾਂ ਨੂੰ ਘਟਾਉਣ ਲਈ ਫਸਲਾਂ ਦਾ ਰੋਟੇਸ਼ਨ ਕਰੋ (ਜਿਵੇਂ ਕਣਕ ਤੋਂ ਬਾਅਦ ਦਾਲਾਂ)।",
+                tooltip_language: "ਇੰਟਰਫੇਸ ਲਈ ਆਪਣੀ ਪਸੰਦੀਦਾ ਭਾਸ਼ਾ ਚੁਣੋ",
+                tooltip_start_field: "ਨਕਸ਼ੇ 'ਤੇ ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨਾ ਸ਼ੁਰੂ ਕਰਨ ਲਈ ਕਲਿੱਕ ਕਰੋ",
+                tooltip_clear_field: "ਸਾਰੇ ਨਿਸ਼ਾਨਬੱਧ ਬਿੰਦੂਆਂ ਨੂੰ ਹਟਾਓ ਅਤੇ ਦੁਬਾਰਾ ਸ਼ੁਰੂ ਕਰੋ",
+                tooltip_complete_field: "ਖੇਤ ਨੂੰ ਪੂਰਾ ਕਰੋ ਅਤੇ ਇਸਦਾ ਖੇਤਰਫਲ ਗਿਣਤੀ ਕਰੋ",
+                tooltip_area_unit: "ਖੇਤ ਦੇ ਖੇਤਰਫਲ ਨੂੰ ਪ੍ਰਦਰਸ਼ਿਤ ਕਰਨ ਲਈ ਇਕਾਈ ਚੁਣੋ",
+                tooltip_crop_wheat: "ਕਣਕ ਇੱਕ ਮੁੱਖ ਫਸਲ ਹੈ, ਜੋ ਪਤਝੜ ਜਾਂ ਬਸੰਤ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ ਹੈ",
+                tooltip_crop_corn: "ਮੱਕੀ ਗਰਮ ਮੌਸਮਾਂ ਜਿਵੇਂ ਬਸੰਤ ਅਤੇ ਗਰਮੀ ਵਿੱਚ ਵਧੀਆ ਵਧਦੀ ਹੈ",
+                tooltip_crop_rice: "ਚੌਲ ਨੂੰ ਬੁਆਈ ਵਾਲੇ ਖੇਤਾਂ ਦੀ ਲੋੜ ਹੁੰਦੀ ਹੈ, ਗਰਮੀ ਲਈ ਆਦਰਸ਼",
+                tooltip_crop_soybean: "ਸੋਇਆਬੀਨ ਇੱਕ ਬਹੁਮੁਖੀ ਫਸਲ ਹੈ, ਜੋ ਬਸੰਤ ਅਤੇ ਗਰਮੀ ਲਈ ਅਨੁਕੂਲ ਹੈ",
+                tooltip_crop_potato: "ਆਲੂ ਨੂੰ ਚੰਗੀ ਤਰ੍ਹਾਂ ਨਿਕਾਸ ਵਾਲੀ ਮਿੱਟੀ ਦੀ ਲੋੜ ਹੁੰਦੀ ਹੈ, ਬਸੰਤ ਜਾਂ ਪਤਝੜ ਲਈ ਅਨੁਕੂਲ",
+                tooltip_crop_tomato: "ਟਮਾਟਰ ਉੱਚ ਮੁੱਲ ਵਾਲੀ ਫਸਲ ਹੈ, ਜੋ ਬਸੰਤ ਅਤੇ ਗਰਮੀ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ ਹੈ",
+                tooltip_season: "ਉਹ ਮੌਸਮ ਚੁਣੋ ਜਦੋਂ ਤੁਸੀਂ ਆਪਣੀ ਫਸਲ ਬੀਜਣ ਦੀ ਯੋਜਨਾ ਬਣਾ ਰਹੇ ਹੋ",
+                tooltip_seeds_required: "ਬਿਜਾਈ ਲਈ ਪ੍ਰਤੀ ਏਕੜ ਲੋੜੀਂਦੇ ਬੀਜ ਦੀ ਮਾਤਰਾ",
+                tooltip_fertilizer: "ਪ੍ਰਤੀ ਏਕੜ ਲੋੜੀਂਦੀ NPK (ਨਾਈਟ੍ਰੋਜਨ, ਫਾਸਫੋਰਸ, ਪੋਟਾਸ਼ੀਅਮ) ਖਾਦ",
+                tooltip_water_needed: "ਵਧਦੇ ਮੌਸਮ ਦੌਰਾਨ ਪ੍ਰਤੀ ਏਕੜ ਲੋੜੀਂਦਾ ਪਾਣੀ",
+                tooltip_row_spacing: "ਇਸਤਮਾਲ ਵਿਕਾਸ ਲਈ ਕਤਾਰਾਂ ਵਿਚਕਾਰ ਸਿਫਾਰਸ਼ੀ ਦੂਰੀ",
+                tooltip_expected_yield: "ਪ੍ਰਤੀ ਏਕੜ ਅਨੁਮਾਨਿਤ ਫਸਲ ਉਤਪਾਦਨ",
+                tooltip_estimated_cost: "ਬੀਜ, ਖਾਦ ਅਤੇ ਪਾਣੀ ਸਮੇਤ ਪ੍ਰਤੀ ਏਕੜ ਕੁੱਲ ਲਾਗਤ",
+                tooltip_estimated_revenue: "ਪ੍ਰਤੀ ਏਕੜ ਫਸਲ ਵੇਚਣ ਤੋਂ ਅਨੁਮਾਨਿਤ ਆਮਦਨ",
+                tooltip_estimated_profit: "ਲਾਗਤ ਘਟਾਉਣ ਤੋਂ ਬਾਅਦ ਪ੍ਰਤੀ ਏਕੜ ਅਨੁਮਾਨਿਤ ਲਾਭ",
+                tooltip_season_suitability: "ਚੁਣਿਆ ਮੌਸਮ ਲਈ ਫਸਲ ਅਨੁਕੂਲ ਹੈ ਜਾਂ ਨਹੀਂ",
+                tooltip_next_season_crops: "ਮਿੱਟੀ ਦੀ ਸਿਹਤ ਲਈ ਅਗਲੇ ਮੌਸਮ ਵਿੱਚ ਬੀਜਣ ਲਈ ਸਿਫਾਰਸ਼ੀ ਫਸਲਾਂ"
+            }
+        };
+
+        const cropData = {
+            wheat: {
+                displayName: { en: "Wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                seeds: "40.8-54.4 kg",
+                fertilizer: "45.4-68.0 kg NPK",
+                water: "20-25 inches",
+                spacing: "6-8 inches rows",
+                season: ["fall", "spring"],
+                yield: "40-80 bushels",
+                cost: "₹15000-20000",
+                marketPrice: "₹2000-2500 per bushel",
+                rotation: [
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "mustard", hi: "सरसों", pa: "ਸਰ੍ਹੋਂ" },
+                    { en: "barley", hi: "जौ", pa: "ਜੌ" }
+                ],
+                plantingMonths: { en: "October-November", hi: "अक्टूबर-नवंबर", pa: "ਅਕਤੂਬਰ-ਨਵੰਬਰ" },
+                harvestingMonths: { en: "March-April", hi: "मार्च-अप्रैल", pa: "ਮਾਰਚ-ਅਪ੍ਰੈਲ" }
+            },
+            corn: {
+                displayName: { en: "Corn", hi: "मक्का", pa: "ਮੱਕੀ" },
+                seeds: "9.1-11.3 kg",
+                fertilizer: "68.0-90.7 kg NPK",
+                water: "20-30 inches",
+                spacing: "30 inches rows",
+                season: ["spring", "summer"],
+                yield: "150-200 bushels",
+                cost: "₹25000-35000",
+                marketPrice: "₹1800-2200 per bushel",
+                rotation: [
+                    { en: "soybean", hi: "सोयाबीन", pa: "ਸੋਇਆਬੀਨ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" }
+                ],
+                plantingMonths: { en: "April-June", hi: "अप्रैल-जून", pa: "ਅਪ੍ਰੈਲ-ਜੂਨ" },
+                harvestingMonths: { en: "August-October", hi: "अगस्त-अक्टूबर", pa: "ਅਗਸਤ-ਅਕਤੂਬਰ" }
+            },
+            rice: {
+                displayName: { en: "Rice", hi: "चावल", pa: "ਚੌਲ" },
+                seeds: "36.3-45.4 kg",
+                fertilizer: "54.4-81.6 kg NPK",
+                water: "40-50 inches",
+                spacing: "Flooded fields",
+                season: ["spring", "summer"],
+                yield: "120-180 bushels",
+                cost: "₹30000-45000",
+                marketPrice: "₹2500-3000 per bushel",
+                rotation: [
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "vegetables", hi: "सब्जियाँ", pa: "ਸਬਜ਼ੀਆਂ" }
+                ],
+                plantingMonths: { en: "June-July", hi: "जून-जुलाई", pa: "ਜੂਨ-ਜੁਲਾਈ" },
+                harvestingMonths: { en: "October-November", hi: "अक्टूबर-नवंबर", pa: "ਅਕਤੂਬਰ-ਨਵੰਬਰ" }
+            },
+            soybean: {
+                displayName: { en: "Soybean", hi: "सोयाबीन", pa: "ਸੋਇਆਬੀਨ" },
+                seeds: "22.7-31.8 kg",
+                fertilizer: "22.7-36.3 kg PK",
+                water: "15-25 inches",
+                spacing: "7-15 inches rows",
+                season: ["spring", "summer"],
+                yield: "40-70 bushels",
+                cost: "₹18000-25000",
+                marketPrice: "₹4000-4500 per bushel",
+                rotation: [
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "millets", hi: "बाजरा", pa: "ਬਾਜਰਾ" }
+                ],
+                plantingMonths: { en: "May-June", hi: "मई-जून", pa: "ਮਈ-ਜੂਨ" },
+                harvestingMonths: { en: "September-October", hi: "सितंबर-अक्टूबर", pa: "ਸਤੰਬਰ-ਅਕਤੂਬਰ" }
+            },
+            potato: {
+                displayName: { en: "Potato", hi: "आलू", pa: "ਆਲੂ" },
+                seeds: "680.4-907.2 kg",
+                fertilizer: "90.7-136.1 kg NPK",
+                water: "20-30 inches",
+                spacing: "12 inches apart",
+                season: ["spring", "fall"],
+                yield: "300-500 cwt",
+                cost: "₹65000-95000",
+                marketPrice: "₹1000-1500 per cwt",
+                rotation: [
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" }
+                ],
+                plantingMonths: { en: "February-March, October", hi: "फरवरी-मार्च, अक्टूबर", pa: "ਫਰਵਰੀ-ਮਾਰਚ, ਅਕਤੂਬਰ" },
+                harvestingMonths: { en: "June-July, January", hi: "जून-जुलाई, जनवरी", pa: "ਜੂਨ-ਜੁਲਾਈ, ਜਨਵਰੀ" }
+            },
+            tomato: {
+                displayName: { en: "Tomato", hi: "टमाटर", pa: "ਟਮਾਟਰ" },
+                seeds: "0.11-0.23 kg",
+                fertilizer: "113.4-158.8 kg NPK",
+                water: "25-35 inches",
+                spacing: "18-36 inches",
+                season: ["spring", "summer"],
+                yield: "20-40 tons",
+                cost: "₹120000-200000",
+                marketPrice: "₹50000-70000 per ton",
+                rotation: [
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" }
+                ],
+                plantingMonths: { en: "February-April", hi: "फरवरी-अप्रैल", pa: "ਫਰਵਰੀ-ਅਪ੍ਰੈਲ" },
+                harvestingMonths: { en: "May-July", hi: "मई-जुलाई", pa: "ਮਈ-ਜੁਲਾਈ" }
+            }
+        };
+
+        function initMap() {
+            map = L.map('map').setView([30.7333, 76.7794], 15);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            }).addTo(map);
+            map.on('click', onMapClick);
+        }
+
+        function startDrawing() {
+            drawingMode = true;
+            fieldPoints = [];
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+            }
+            updateStatus(translations[currentLanguage].status_drawing);
+        }
+
+        function onMapClick(e) {
+            if (!drawingMode) return;
+            fieldPoints.push([e.latlng.lat, e.latlng.lng]);
+            L.circleMarker([e.latlng.lat, e.latlng.lng], {
+                radius: 5,
+                fillColor: '#ff7800',
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+            updateStatus(translations[currentLanguage].status_point_added.replace('{n}', fieldPoints.length));
+        }
+
+        function validatePolygon(points) {
+            if (points.length < 3) return false;
+            const closedPoints = [...points, points[0]];
+            const polygon = turf.polygon([closedPoints.map(point => [point[1], point[0]])]);
+            const kinks = turf.kinks(polygon);
+            return kinks.features.length === 0;
+        }
+
+        function completeField() {
+            if (fieldPoints.length < 3) {
+                alert(translations[currentLanguage].error_min_points);
+                return;
+            }
+            if (!validatePolygon(fieldPoints)) {
+                alert(translations[currentLanguage].error_invalid_polygon);
+                return;
+            }
+            drawingMode = false;
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+            }
+            fieldPolygon = L.polygon(fieldPoints, {
+                color: '#27ae60',
+                fillColor: '#27ae60',
+                fillOpacity: 0.3,
+                weight: 2
+            }).addTo(map);
+            fieldArea = calculatePolygonArea(fieldPoints);
+            document.getElementById('areaDisplay').style.display = 'block';
+            updateAreaDisplay();
+            document.getElementById('cropSelection').style.display = 'block';
+            document.getElementById('cropCalendar').style.display = 'block';
+            updateCropCalendar();
+            updateStatus(translations[currentLanguage].status_field_completed);
+            map.fitBounds(fieldPolygon.getBounds());
+        }
+
+        function clearField() {
+            fieldPoints = [];
+            if (fieldPolygon) {
+                map.removeLayer(fieldPolygon);
+                fieldPolygon = null;
+            }
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.CircleMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+            drawingMode = false;
+            fieldArea = 0;
+            selectedCrop = null;
+            document.getElementById('areaDisplay').style.display = 'none';
+            document.getElementById('cropSelection').style.display = 'none';
+            document.getElementById('cropCalendar').style.display = 'none';
+            document.getElementById('seasonSelection').style.display = 'none';
+            document.getElementById('recommendations').style.display = 'none';
+            document.querySelectorAll('.crop-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            updateStatus(translations[currentLanguage].status_field_cleared);
+        }
+
+        function selectCrop(crop) {
+            selectedCrop = crop;
+            document.querySelectorAll('.crop-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-crop="${crop}"]`).classList.add('selected');
+            document.getElementById('seasonSelection').style.display = 'block';
+            updateStatus(translations[currentLanguage].status_crop_selected.replace('{crop}', cropData[crop].displayName[currentLanguage]));
+            updateRecommendations();
+        }
+
+        function updateAreaDisplay() {
+            const unit = document.getElementById('areaUnit').value;
+            fieldArea = calculatePolygonArea(fieldPoints, unit);
+            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ` ${translations[currentLanguage][`unit_${unit}`]}`;
+            updateRecommendations();
+        }
+
+        function updateRecommendations() {
+            if (!selectedCrop || fieldArea === 0) return;
+            const season = document.getElementById('season').value;
+            const crop = cropData[selectedCrop];
+
+            const yieldRange = multiplyRange(crop.yield, fieldArea, false);
+            const priceRange = crop.marketPrice;
+            const costRange = multiplyRange(crop.cost, fieldArea, false);
+            const revenue = calculateRevenue(yieldRange, priceRange);
+            const profit = calculateProfit(revenue, costRange);
+
+            let recommendations = `
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="seeds_required">${translations[currentLanguage].seeds_required}
+                        <span class="tooltip" data-i18n="tooltip_seeds_required">${translations[currentLanguage].tooltip_seeds_required}</span>
+                    </span>
+                    <span class="rec-value">${multiplyRange(crop.seeds, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="fertilizer">${translations[currentLanguage].fertilizer}
+                        <span class="tooltip" data-i18n="tooltip_fertilizer">${translations[currentLanguage].tooltip_fertilizer}</span>
+                    </span>
+                    <span class="rec-value">${multiplyRange(crop.fertilizer, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="water_needed">${translations[currentLanguage].water_needed}
+                        <span class="tooltip" data-i18n="tooltip_water_needed">${translations[currentLanguage].tooltip_water_needed}</span>
+                    </span>
+                    <span class="rec-value">${multiplyRange(crop.water, fieldArea)}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="row_spacing">${translations[currentLanguage].row_spacing}
+                        <span class="tooltip" data-i18n="tooltip_row_spacing">${translations[currentLanguage].tooltip_row_spacing}</span>
+                    </span>
+                    <span class="rec-value">${crop.spacing}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="expected_yield">${translations[currentLanguage].expected_yield}
+                        <span class="tooltip" data-i18n="tooltip_expected_yield">${translations[currentLanguage].tooltip_expected_yield}</span>
+                    </span>
+                    <span class="rec-value">${yieldRange}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="estimated_cost">${translations[currentLanguage].estimated_cost}
+                        <span class="tooltip" data-i18n="tooltip_estimated_cost">${translations[currentLanguage].tooltip_estimated_cost}</span>
+                    </span>
+                    <span class="rec-value">${costRange}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="estimated_revenue">${translations[currentLanguage].estimated_revenue}
+                        <span class="tooltip" data-i18n="tooltip_estimated_revenue">${translations[currentLanguage].tooltip_estimated_revenue}</span>
+                    </span>
+                    <span class="rec-value">${revenue}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label" data-i18n="estimated_profit">${translations[currentLanguage].estimated_profit}
+                        <span class="tooltip" data-i18n="tooltip_estimated_profit">${translations[currentLanguage].tooltip_estimated_profit}</span>
+                    </span>
+                    <span class="rec-value">${profit}</span>
+                </div>
+            `;
+            
+            if (season) {
+                const suitable = crop.season.includes(season);
+                recommendations += `
+                    <div class="rec-item">
+                        <span class="rec-label" data-i18n="season_suitability">${translations[currentLanguage].season_suitability}
+                            <span class="tooltip" data-i18n="tooltip_season_suitability">${translations[currentLanguage].tooltip_season_suitability}</span>
+                        </span>
+                        <span class="rec-value" style="color: ${suitable ? '#27ae60' : '#e74c3c'}">
+                            ${translations[currentLanguage][suitable ? 'suitable' : 'not_recommended']}
+                        </span>
+                    </div>
+                    <div class="rec-item">
+                        <span class="rec-label" data-i18n="next_season_crops">${translations[currentLanguage].next_season_crops}
+                            <span class="tooltip" data-i18n="tooltip_next_season_crops">${translations[currentLanguage].tooltip_next_season_crops}</span>
+                        </span>
+                        <span class="rec-value">${crop.rotation.map(r => r[currentLanguage]).join(", ")}</span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('recommendationsList').innerHTML = recommendations;
+            document.getElementById('recommendations').style.display = 'block';
+        }
+
+        function updateCropCalendar() {
+            const tableBody = document.getElementById('calendarTableBody');
+            tableBody.innerHTML = '';
+            Object.keys(cropData).forEach(crop => {
+                const row = `
+                    <tr>
+                        <td data-i18n="crop_${crop}">${cropData[crop].displayName[currentLanguage]}</td>
+                        <td>${cropData[crop].plantingMonths[currentLanguage]}</td>
+                        <td>${cropData[crop].harvestingMonths[currentLanguage]}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function toggleAccordion(contentId) {
+            const content = document.getElementById(contentId);
+            const isActive = content.classList.contains('active');
+            document.querySelectorAll('.accordion-content').forEach(c => {
+                c.classList.remove('active');
+                c.previousElementSibling.querySelector('span:last-child').textContent = '▼';
+            });
+            if (!isActive) {
+                content.classList.add('active');
+                content.previousElementSibling.querySelector('span:last-child').textContent = '▲';
+            }
+        }
+
+        function multiplyRange(range, multiplier, includeUnit = true) {
+            if (range.includes('₹')) {
+                const numbers = range.match(/\d+(\.\d+)?/g);
+                if (numbers && numbers.length === 2) {
+                    const min = parseFloat(numbers[0]) * multiplier;
+                    const max = parseFloat(numbers[1]) * multiplier;
+                    return `₹${min.toFixed(0)}-${max.toFixed(0)}`;
+                }
+            } else {
+                const numbers = range.match(/\d+(\.\d+)?/g);
+                if (numbers && numbers.length >= 1) {
+                    if (numbers.length === 2) {
+                        const min = parseFloat(numbers[0]) * multiplier;
+                        const max = parseFloat(numbers[1]) * multiplier;
+                        const unit = range.replace(/[\d\-\.\s]/g, '');
+                        return includeUnit ? `${min.toFixed(1)}-${max.toFixed(1)} ${unit}` : `${min.toFixed(1)}-${max.toFixed(1)}`;
+                    } else {
+                        const value = parseFloat(numbers[0]) * multiplier;
+                        const unit = range.replace(/[\d\.\s]/g, '');
+                        return includeUnit ? `${value.toFixed(1)} ${unit}` : `${value.toFixed(1)}`;
+                    }
+                }
+            }
+            return range;
+        }
+
+        function calculateRevenue(yieldRange, priceRange) {
+            const yieldNumbers = yieldRange.match(/\d+(\.\d+)?/g).map(parseFloat);
+            const priceNumbers = priceRange.match(/\d+(\.\d+)?/g).map(parseFloat);
+            if (yieldNumbers.length === 2 && priceNumbers.length === 2) {
+                const minRevenue = yieldNumbers[0] * priceNumbers[0];
+                const maxRevenue = yieldNumbers[1] * priceNumbers[1];
+                return `₹${minRevenue.toFixed(0)}-${maxRevenue.toFixed(0)}`;
+            } else if (yieldNumbers.length === 1 && priceNumbers.length === 2) {
+                const minRevenue = yieldNumbers[0] * priceNumbers[0];
+                const maxRevenue = yieldNumbers[0] * priceNumbers[1];
+                return `₹${minRevenue.toFixed(0)}-${maxRevenue.toFixed(0)}`;
+            }
+            return "N/A";
+        }
+
+        function calculateProfit(revenue, cost) {
+            const revenueNumbers = revenue.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
+            const costNumbers = cost.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
+            if (revenueNumbers.length === 2 && costNumbers.length === 2) {
+                const minProfit = revenueNumbers[0] - costNumbers[1];
+                const maxProfit = revenueNumbers[1] - costNumbers[0];
+                return `₹${minProfit.toFixed(0)}-${maxProfit.toFixed(0)}`;
+            }
+            return "N/A";
+        }
+
+        function calculatePolygonArea(points, unit = 'acres') {
+            if (points.length < 3) return 0;
+            const closedPoints = [...points, points[0]];
+            const polygon = turf.polygon([closedPoints.map(point => [point[1], point[0]])]);
+            const areaSquareMeters = turf.area(polygon);
+            if (unit === 'hectares') return areaSquareMeters * 0.0001;
+            if (unit === 'yards') return areaSquareMeters * 1.19599;
+            return areaSquareMeters * 0.000247105;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusInfo').textContent = message;
+        }
+
+        function updateLanguage() {
+            currentLanguage = document.getElementById('language').value;
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                element.textContent = translations[currentLanguage][key] || translations.en[key];
+            });
+            document.title = translations[currentLanguage].title;
+            updateAreaDisplay();
+            updateCropCalendar();
+            if (selectedCrop) {
+                updateRecommendations();
+                updateStatus(translations[currentLanguage].status_crop_selected.replace('{crop}', cropData[selectedCrop].displayName[currentLanguage]));
+            } else if (fieldPoints.length > 0) {
+                updateStatus(translations[currentLanguage].status_drawing);
+            } else {
+                updateStatus(translations[currentLanguage].status_initial);
+            }
+        }
+
+        window.onload = function() {
+            initMap();
+            updateLanguage();
+        };
+    </script>
+</body>
+</html>
