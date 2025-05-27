@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DICE-Farm Field Planning System</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/@turf/turf@7/turf.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -607,22 +608,23 @@
         }
 
         function calculatePolygonArea(points) {
-            // Simple area calculation using shoelace formula
-            // Convert to approximate acres (very rough estimation)
-            let area = 0;
-            const n = points.length;
-            
-            for (let i = 0; i < n; i++) {
-                const j = (i + 1) % n;
-                area += points[i][0] * points[j][1];
-                area -= points[j][0] * points[i][1];
-            }
-            
-            area = Math.abs(area) / 2;
-            
-            // Very rough conversion to acres (this is simplified)
-            // In reality, you'd need proper geodetic calculations
-            return area * 24710; // Approximate conversion factor
+            if (points.length < 3) return 0;
+
+            // Ensure the polygon is closed by adding the first point to the end
+            const closedPoints = [...points, points[0]];
+
+            // Create a GeoJSON polygon
+            const polygon = turf.polygon([
+                closedPoints.map(point => [point[1], point[0]]) // turf.js expects [lng, lat]
+            ]);
+
+            // Calculate area in square meters
+            const areaSquareMeters = turf.area(polygon);
+
+            // Convert to acres (1 square meter = 0.000247105 acres)
+            const areaAcres = areaSquareMeters * 0.000247105;
+
+            return areaAcres;
         }
 
         function updateStatus(message) {
