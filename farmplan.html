@@ -291,6 +291,10 @@
             <div class="area-display" id="areaDisplay" style="display: none;">
                 <div>Selected Area</div>
                 <strong id="areaValue">0 acres</strong>
+                <select id="areaUnit" onchange="updateAreaDisplay()">
+                    <option value="acres">Acres</option>
+                    <option value="hectares">Hectares</option>
+                </select>
             </div>
 
             <div class="control-group" id="cropSelection" style="display: none;">
@@ -353,72 +357,79 @@
         // Crop data with requirements per acre (costs in Indian Rupees, seeds and fertilizer in kg)
         const cropData = {
             wheat: {
-                seeds: "40.8-54.4 kg", // 90-120 lbs * 0.453592
-                fertilizer: "45.4-68.0 kg NPK", // 100-150 lbs * 0.453592
+                seeds: "40.8-54.4 kg",
+                fertilizer: "45.4-68.0 kg NPK",
                 water: "20-25 inches",
                 spacing: "6-8 inches rows",
                 season: ["fall", "spring"],
                 yield: "40-80 bushels",
-                cost: "₹15000-20000"
+                cost: "₹15000-20000",
+                marketPrice: "₹2000-2500 per bushel",
+                rotation: ["pulses", "mustard", "barley"]
             },
             corn: {
-                seeds: "9.1-11.3 kg", // 20-25 lbs * 0.453592
-                fertilizer: "68.0-90.7 kg NPK", // 150-200 lbs * 0.453592
+                seeds: "9.1-11.3 kg",
+                fertilizer: "68.0-90.7 kg NPK",
                 water: "20-30 inches",
                 spacing: "30 inches rows",
                 season: ["spring", "summer"],
                 yield: "150-200 bushels",
-                cost: "₹25000-35000"
+                cost: "₹25000-35000",
+                marketPrice: "₹1800-2200 per bushel",
+                rotation: ["soybean", "pulses", "wheat"]
             },
             rice: {
-                seeds: "36.3-45.4 kg", // 80-100 lbs * 0.453592
-                fertilizer: "54.4-81.6 kg NPK", // 120-180 lbs * 0.453592
+                seeds: "36.3-45.4 kg",
+                fertilizer: "54.4-81.6 kg NPK",
                 water: "40-50 inches",
                 spacing: "Flooded fields",
                 season: ["spring", "summer"],
                 yield: "120-180 bushels",
-                cost: "₹30000-45000"
+                cost: "₹30000-45000",
+                marketPrice: "₹2500-3000 per bushel",
+                rotation: ["wheat", "pulses", "vegetables"]
             },
             soybean: {
-                seeds: "22.7-31.8 kg", // 50-70 lbs * 0.453592
-                fertilizer: "22.7-36.3 kg PK", // 50-80 lbs * 0.453592
+                seeds: "22.7-31.8 kg",
+                fertilizer: "22.7-36.3 kg PK",
                 water: "15-25 inches",
                 spacing: "7-15 inches rows",
                 season: ["spring", "summer"],
                 yield: "40-70 bushels",
-                cost: "₹18000-25000"
+                cost: "₹18000-25000",
+                marketPrice: "₹4000-4500 per bushel",
+                rotation: ["corn", "wheat", "millets"]
             },
             potato: {
-                seeds: "680.4-907.2 kg", // 1500-2000 lbs * 0.453592
-                fertilizer: "90.7-136.1 kg NPK", // 200-300 lbs * 0.453592
+                seeds: "680.4-907.2 kg",
+                fertilizer: "90.7-136.1 kg NPK",
                 water: "20-30 inches",
                 spacing: "12 inches apart",
                 season: ["spring", "fall"],
                 yield: "300-500 cwt",
-                cost: "₹65000-95000"
+                cost: "₹65000-95000",
+                marketPrice: "₹1000-1500 per cwt",
+                rotation: ["corn", "pulses", "wheat"]
             },
             tomato: {
-                seeds: "0.11-0.23 kg", // 0.25-0.5 lbs * 0.453592
-                fertilizer: "113.4-158.8 kg NPK", // 250-350 lbs * 0.453592
+                seeds: "0.11-0.23 kg",
+                fertilizer: "113.4-158.8 kg NPK",
                 water: "25-35 inches",
                 spacing: "18-36 inches",
                 season: ["spring", "summer"],
                 yield: "20-40 tons",
-                cost: "₹120000-200000"
+                cost: "₹120000-200000",
+                marketPrice: "₹50000-70000 per ton",
+                rotation: ["pulses", "wheat", "corn"]
             }
         };
 
         // Initialize map
         function initMap() {
-            // Default to Punjab, India coordinates
             map = L.map('map').setView([30.7333, 76.7794], 15);
-            
-            // Use Esri World Imagery for satellite view
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             }).addTo(map);
-
-            // Add click handler for drawing
             map.on('click', onMapClick);
         }
 
@@ -433,10 +444,7 @@
 
         function onMapClick(e) {
             if (!drawingMode) return;
-
             fieldPoints.push([e.latlng.lat, e.latlng.lng]);
-            
-            // Add marker for each point
             L.circleMarker([e.latlng.lat, e.latlng.lng], {
                 radius: 5,
                 fillColor: '#ff7800',
@@ -445,7 +453,6 @@
                 opacity: 1,
                 fillOpacity: 0.8
             }).addTo(map);
-
             updateStatus(`Point ${fieldPoints.length} added. Continue clicking to define boundaries.`);
         }
 
@@ -454,32 +461,21 @@
                 alert("Please select at least 3 points to define a field.");
                 return;
             }
-
             drawingMode = false;
-            
-            // Create polygon
             if (fieldPolygon) {
                 map.removeLayer(fieldPolygon);
             }
-            
             fieldPolygon = L.polygon(fieldPoints, {
                 color: '#27ae60',
                 fillColor: '#27ae60',
                 fillOpacity: 0.3,
                 weight: 2
             }).addTo(map);
-
-            // Calculate area
             fieldArea = calculatePolygonArea(fieldPoints);
-            
-            // Update UI
             document.getElementById('areaDisplay').style.display = 'block';
-            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ' acres';
+            updateAreaDisplay();
             document.getElementById('cropSelection').style.display = 'block';
-            
             updateStatus("Field completed! Now select a crop to get recommendations.");
-            
-            // Fit map to polygon
             map.fitBounds(fieldPolygon.getBounds());
         }
 
@@ -489,53 +485,55 @@
                 map.removeLayer(fieldPolygon);
                 fieldPolygon = null;
             }
-            
-            // Clear all markers
             map.eachLayer(function(layer) {
                 if (layer instanceof L.CircleMarker) {
                     map.removeLayer(layer);
                 }
             });
-            
             drawingMode = false;
             fieldArea = 0;
             selectedCrop = null;
-            
-            // Hide UI elements
             document.getElementById('areaDisplay').style.display = 'none';
             document.getElementById('cropSelection').style.display = 'none';
             document.getElementById('seasonSelection').style.display = 'none';
             document.getElementById('recommendations').style.display = 'none';
-            
-            // Clear crop selection
             document.querySelectorAll('.crop-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            
             updateStatus("Field cleared. Click 'Start Field Selection' to begin again.");
         }
 
         function selectCrop(crop) {
             selectedCrop = crop;
-            
-            // Update UI
             document.querySelectorAll('.crop-card').forEach(card => {
                 card.classList.remove('selected');
             });
             document.querySelector(`[data-crop="${crop}"]`).classList.add('selected');
-            
             document.getElementById('seasonSelection').style.display = 'block';
             updateStatus(`${crop.charAt(0).toUpperCase() + crop.slice(1)} selected! Choose planting season for detailed recommendations.`);
-            
+            updateRecommendations();
+        }
+
+        function updateAreaDisplay() {
+            const unit = document.getElementById('areaUnit').value;
+            fieldArea = calculatePolygonArea(fieldPoints, unit);
+            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ` ${unit}`;
             updateRecommendations();
         }
 
         function updateRecommendations() {
             if (!selectedCrop || fieldArea === 0) return;
-            
             const season = document.getElementById('season').value;
             const crop = cropData[selectedCrop];
-            
+            const unit = document.getElementById('areaUnit').value;
+
+            // Calculate revenue and profit
+            const yieldRange = multiplyRange(crop.yield, fieldArea, false);
+            const priceRange = crop.marketPrice;
+            const costRange = multiplyRange(crop.cost, fieldArea, false);
+            const revenue = calculateRevenue(yieldRange, priceRange);
+            const profit = calculateProfit(revenue, costRange);
+
             let recommendations = `
                 <div class="rec-item">
                     <span class="rec-label">Seeds Required:</span>
@@ -555,11 +553,19 @@
                 </div>
                 <div class="rec-item">
                     <span class="rec-label">Expected Yield:</span>
-                    <span class="rec-value">${multiplyRange(crop.yield, fieldArea)}</span>
+                    <span class="rec-value">${yieldRange}</span>
                 </div>
                 <div class="rec-item">
                     <span class="rec-label">Estimated Cost:</span>
-                    <span class="rec-value">${multiplyRange(crop.cost, fieldArea)}</span>
+                    <span class="rec-value">${costRange}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Estimated Revenue:</span>
+                    <span class="rec-value">${revenue}</span>
+                </div>
+                <div class="rec-item">
+                    <span class="rec-label">Estimated Profit:</span>
+                    <span class="rec-value">${profit}</span>
                 </div>
             `;
             
@@ -572,6 +578,10 @@
                             ${suitable ? '✅ Suitable' : '❌ Not Recommended'}
                         </span>
                     </div>
+                    <div class="rec-item">
+                        <span class="rec-label">Next Season Crops:</span>
+                        <span class="rec-value">${crop.rotation.join(", ")}</span>
+                    </div>
                 `;
             }
             
@@ -579,9 +589,8 @@
             document.getElementById('recommendations').style.display = 'block';
         }
 
-        function multiplyRange(range, multiplier) {
+        function multiplyRange(range, multiplier, includeUnit = true) {
             if (range.includes('₹')) {
-                // Handle cost ranges
                 const numbers = range.match(/\d+(\.\d+)?/g);
                 if (numbers && numbers.length === 2) {
                     const min = parseFloat(numbers[0]) * multiplier;
@@ -589,49 +598,61 @@
                     return `₹${min.toFixed(0)}-${max.toFixed(0)}`;
                 }
             } else {
-                // Handle other ranges (kg, inches, bushels, cwt, tons)
                 const numbers = range.match(/\d+(\.\d+)?/g);
                 if (numbers && numbers.length >= 1) {
                     if (numbers.length === 2) {
                         const min = parseFloat(numbers[0]) * multiplier;
                         const max = parseFloat(numbers[1]) * multiplier;
                         const unit = range.replace(/[\d\-\.\s]/g, '');
-                        return `${min.toFixed(1)}-${max.toFixed(1)} ${unit}`;
+                        return includeUnit ? `${min.toFixed(1)}-${max.toFixed(1)} ${unit}` : `${min.toFixed(1)}-${max.toFixed(1)}`;
                     } else {
                         const value = parseFloat(numbers[0]) * multiplier;
                         const unit = range.replace(/[\d\.\s]/g, '');
-                        return `${value.toFixed(1)} ${unit}`;
+                        return includeUnit ? `${value.toFixed(1)} ${unit}` : `${value.toFixed(1)}`;
                     }
                 }
             }
             return range;
         }
 
-        function calculatePolygonArea(points) {
+        function calculateRevenue(yieldRange, priceRange) {
+            const yieldNumbers = yieldRange.match(/\d+(\.\d+)?/g).map(parseFloat);
+            const priceNumbers = priceRange.match(/\d+(\.\d+)?/g).map(parseFloat);
+            if (yieldNumbers.length === 2 && priceNumbers.length === 2) {
+                const minRevenue = yieldNumbers[0] * priceNumbers[0];
+                const maxRevenue = yieldNumbers[1] * priceNumbers[1];
+                return `₹${minRevenue.toFixed(0)}-${maxRevenue.toFixed(0)}`;
+            } else if (yieldNumbers.length === 1 && priceNumbers.length === 2) {
+                const minRevenue = yieldNumbers[0] * priceNumbers[0];
+                const maxRevenue = yieldNumbers[0] * priceNumbers[1];
+                return `₹${minRevenue.toFixed(0)}-${maxRevenue.toFixed(0)}`;
+            }
+            return "N/A";
+        }
+
+        function calculateProfit(revenue, cost) {
+            const revenueNumbers = revenue.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
+            const costNumbers = cost.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
+            if (revenueNumbers.length === 2 && costNumbers.length === 2) {
+                const minProfit = revenueNumbers[0] - costNumbers[1]; // Conservative: min revenue - max cost
+                const maxProfit = revenueNumbers[1] - costNumbers[0]; // Optimistic: max revenue - min cost
+                return `₹${minProfit.toFixed(0)}-${maxProfit.toFixed(0)}`;
+            }
+            return "N/A";
+        }
+
+        function calculatePolygonArea(points, unit = 'acres') {
             if (points.length < 3) return 0;
-
-            // Ensure the polygon is closed by adding the first point to the end
             const closedPoints = [...points, points[0]];
-
-            // Create a GeoJSON polygon
-            const polygon = turf.polygon([
-                closedPoints.map(point => [point[1], point[0]]) // turf.js expects [lng, lat]
-            ]);
-
-            // Calculate area in square meters
+            const polygon = turf.polygon([closedPoints.map(point => [point[1], point[0]])]);
             const areaSquareMeters = turf.area(polygon);
-
-            // Convert to acres (1 square meter = 0.000247105 acres)
-            const areaAcres = areaSquareMeters * 0.000247105;
-
-            return areaAcres;
+            return unit === 'hectares' ? areaSquareMeters * 0.0001 : areaSquareMeters * 0.000247105;
         }
 
         function updateStatus(message) {
             document.getElementById('statusInfo').textContent = message;
         }
 
-        // Initialize everything when page loads
         window.onload = function() {
             initMap();
         };
