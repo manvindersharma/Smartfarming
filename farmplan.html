@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DICE-Farm Field Planning System</title>
+    <title data-i18n="title">DICE-Farm Field Planning System</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans&family=Noto+Sans+Devanagari&family=Noto+Sans+Gurmukhi&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@turf/turf@7/turf.min.js"></script>
     <style>
         * {
@@ -14,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Gurmukhi', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
@@ -225,7 +226,7 @@
 
         .crop-card:hover {
             border-color: #3498db;
-            background: #f8f9fa;
+            background: #f5f9fa;
         }
 
         .crop-card.selected {
@@ -233,7 +234,7 @@
             background: #e8f5e8;
         }
 
-        .crop-card img {
+        .crop-card {
             width: 40px;
             height: 40px;
             margin-bottom: 8px;
@@ -273,73 +274,82 @@
         
         <div class="controls-section">
             <div class="header">
-                <h1>🌾 Farm Planning System</h1>
-                <p>Click on map to define your field boundaries</p>
+                <h1 data-i18n="header_title">🌾 Farm Planning System</h1>
+                <p data-i18n="header_subtitle">Click on map to define your field boundaries</p>
             </div>
 
-            <div class="status-info" id="statusInfo">
+            <div class="control-group">
+                <h3 data-i18n="language_selection">🌐 Select Language</h3>
+                <select id="language" onchange="updateLanguage()">
+                    <option value="en" data-i18n="lang_english">English</option>
+                    <option value="hi" data-i18n="lang_hindi">Hindi</option>
+                    <option value="pa" data-i18n="lang_punjabi">Punjabi</option>
+                </select>
+            </div>
+
+            <div class="status-info" id="statusInfo" data-i18n="status_initial">
                 Click on the map to start marking your field boundaries
             </div>
 
             <div class="control-group">
-                <h3>📍 Field Mapping</h3>
-                <button class="btn btn-primary" onclick="startDrawing()">Start Field Selection</button>
-                <button class="btn btn-danger" onclick="clearField()">Clear Field</button>
-                <button class="btn btn-success" onclick="completeField()">Complete Field</button>
+                <h3 data-i18n="field_mapping">📍 Field Mapping</h3>
+                <button class="btn btn-primary" onclick="startDrawing()" data-i18n="start_field">Start Field Selection</button>
+                <button class="btn btn-danger" onclick="clearField()" data-i18n="clear_field">Clear Field</button>
+                <button class="btn btn-success" onclick="completeField()" data-i18n="complete_field">Complete Field</button>
             </div>
 
             <div class="area-display" id="areaDisplay" style="display: none;">
-                <div>Selected Area</div>
+                <div data-i18n="selected_area">Selected Area</div>
                 <strong id="areaValue">0 acres</strong>
                 <select id="areaUnit" onchange="updateAreaDisplay()">
-                    <option value="acres">Acres</option>
-                    <option value="hectares">Hectares</option>
+                    <option value="acres" data-i18n="unit_acres">Acres</option>
+                    <option value="hectares" data-i18n="unit_hectares">Hectares</option>
                 </select>
             </div>
 
             <div class="control-group" id="cropSelection" style="display: none;">
-                <h3>🌱 Select Crop</h3>
+                <h3 data-i18n="select_crop">🌱 Select Crop</h3>
                 <div class="crop-grid">
                     <div class="crop-card" onclick="selectCrop('wheat')" data-crop="wheat">
                         <div>🌾</div>
-                        <span>Wheat</span>
+                        <span data-i18n="crop_wheat">Wheat</span>
                     </div>
                     <div class="crop-card" onclick="selectCrop('corn')" data-crop="corn">
                         <div>🌽</div>
-                        <span>Corn</span>
+                        <span data-i18n="crop_corn">Corn</span>
                     </div>
                     <div class="crop-card" onclick="selectCrop('rice')" data-crop="rice">
                         <div>🌾</div>
-                        <span>Rice</span>
+                        <span data-i18n="crop_rice">Rice</span>
                     </div>
                     <div class="crop-card" onclick="selectCrop('soybean')" data-crop="soybean">
                         <div>🫘</div>
-                        <span>Soybean</span>
+                        <span data-i18n="crop_soybean">Soybean</span>
                     </div>
                     <div class="crop-card" onclick="selectCrop('potato')" data-crop="potato">
                         <div>🥔</div>
-                        <span>Potato</span>
+                        <span data-i18n="crop_potato">Potato</span>
                     </div>
                     <div class="crop-card" onclick="selectCrop('tomato')" data-crop="tomato">
                         <div>🍅</div>
-                        <span>Tomato</span>
+                        <span data-i18n="crop_tomato">Tomato</span>
                     </div>
                 </div>
             </div>
 
             <div class="control-group" id="seasonSelection" style="display: none;">
-                <h3>📅 Planting Season</h3>
+                <h3 data-i18n="planting_season">📅 Planting Season</h3>
                 <select id="season" onchange="updateRecommendations()">
-                    <option value="">Select Season</option>
-                    <option value="spring">Spring</option>
-                    <option value="summer">Summer</option>
-                    <option value="fall">Fall</option>
-                    <option value="winter">Winter</option>
+                    <option value="" data-i18n="select_season">Select Season</option>
+                    <option value="spring" data-i18n="season_spring">Spring</option>
+                    <option value="summer" data-i18n="season_summer">Summer</option>
+                    <option value="fall" data-i18n="season_fall">Fall</option>
+                    <option value="winter" data-i18n="season_winter">Winter</option>
                 </select>
             </div>
 
             <div class="recommendations" id="recommendations" style="display: none;">
-                <h4>📊 Agricultural Recommendations</h4>
+                <h4 data-i18n="recommendations_title">📊 Agricultural Recommendations</h4>
                 <div id="recommendationsList"></div>
             </div>
         </div>
@@ -353,10 +363,162 @@
         let fieldPoints = [];
         let selectedCrop = null;
         let fieldArea = 0;
+        let currentLanguage = 'en';
+
+        const translations = {
+            en: {
+                title: "DICE-Farm Field Planning System",
+                header_title: "🌾 Farm Planning System",
+                header_subtitle: "Click on map to define your field boundaries",
+                language_selection: "🌐 Select Language",
+                lang_english: "English",
+                lang_hindi: "Hindi",
+                lang_punjabi: "Punjabi",
+                status_initial: "Click on the map to start marking your field boundaries",
+                status_drawing: "Click on the map to mark field boundaries. Click 'Complete Field' when done.",
+                status_point_added: "Point {n} added. Continue clicking to define boundaries.",
+                status_field_completed: "Field completed! Now select a crop to get recommendations.",
+                status_field_cleared: "Field cleared. Click 'Start Field Selection' to begin again.",
+                status_crop_selected: "{crop} selected! Choose planting season for detailed recommendations.",
+                field_mapping: "📍 Field Mapping",
+                start_field: "Start Field Selection",
+                clear_field: "Clear Field",
+                complete_field: "Complete Field",
+                selected_area: "Selected Area",
+                unit_acres: "Acres",
+                unit_hectares: "Hectares",
+                select_crop: "🌱 Select Crop",
+                crop_wheat: "Wheat",
+                crop_corn: "Corn",
+                crop_rice: "Rice",
+                crop_soybean: "Soybean",
+                crop_potato: "Potato",
+                crop_tomato: "Tomato",
+                planting_season: "📅 Planting Season",
+                select_season: "Select Season",
+                season_spring: "Spring",
+                season_summer: "Summer",
+                season_fall: "Fall",
+                season_winter: "Winter",
+                recommendations_title: "📊 Agricultural Recommendations",
+                seeds_required: "Seeds Required",
+                fertilizer: "Fertilizer",
+                water_needed: "Water Needed",
+                row_spacing: "Row Spacing",
+                expected_yield: "Expected Yield",
+                estimated_cost: "Estimated Cost",
+                estimated_revenue: "Estimated Revenue",
+                estimated_profit: "Estimated Profit",
+                season_suitability: "Season Suitability",
+                suitable: "✅ Suitable",
+                not_recommended: "❌ Not Recommended",
+                next_season_crops: "Next Season Crops",
+                error_min_points: "Please select at least 3 points to define a field."
+            },
+            hi: {
+                title: "DICE-खेत नियोजन प्रणाली",
+                header_title: "🌾 खेत नियोजन प्रणाली",
+                header_subtitle: "खेत की सीमाएँ निर्धारित करने के लिए नक्शे पर क्लिक करें",
+                language_selection: "🌐 भाषा चुनें",
+                lang_english: "अंग्रेजी",
+                lang_hindi: "हिन्दी",
+                lang_punjabi: "पंजाबी",
+                status_initial: "खेत की सीमाएँ चिह्नित करने के लिए नक्शे पर क्लिक करें",
+                status_drawing: "खेत की सीमाएँ चिह्नित करने के लिए नक्शे पर क्लिक करें। समाप्त होने पर 'खेत पूरा करें' पर क्लिक करें।",
+                status_point_added: "बिंदु {n} जोड़ा गया। सीमाएँ निर्धारित करने के लिए क्लिक करना जारी रखें।",
+                status_field_completed: "खेत पूरा हुआ! अब सिफारिशें प्राप्त करने के लिए फसल चुनें।",
+                status_field_cleared: "खेत साफ किया गया। फिर से शुरू करने के लिए 'खेत चयन शुरू करें' पर क्लिक करें।",
+                status_crop_selected: "{crop} चुना गया! विस्तृत सिफारिशों के लिए रोपण का मौसम चुनें।",
+                field_mapping: "📍 खेत मानचित्रण",
+                start_field: "खेत चयन शुरू करें",
+                clear_field: "खेत साफ करें",
+                complete_field: "खेत पूरा करें",
+                selected_area: "चयनित क्षेत्र",
+                unit_acres: "एकड़",
+                unit_hectares: "हेक्टेयर",
+                select_crop: "🌱 फसल चुनें",
+                crop_wheat: "गेहूं",
+                crop_corn: "मक्का",
+                crop_rice: "चावल",
+                crop_soybean: "सोयाबीन",
+                crop_potato: "आलू",
+                crop_tomato: "टमाटर",
+                planting_season: "📅 रोपण का मौसम",
+                select_season: "मौसम चुनें",
+                season_spring: "वसंत",
+                season_summer: "ग्रीष्म",
+                season_fall: "पतझड़",
+                season_winter: "शीत",
+                recommendations_title: "📊 कृषि सिफारिशें",
+                seeds_required: "आवश्यक बीज",
+                fertilizer: "उर्वरक",
+                water_needed: "आवश्यक पानी",
+                row_spacing: "पंक्ति अंतर",
+                expected_yield: "अपेक्षित उपज",
+                estimated_cost: "अनुमानित लागत",
+                estimated_revenue: "अनुमानित राजस्व",
+                estimated_profit: "अनुमानित लाभ",
+                season_suitability: "मौसम उपयुक्तता",
+                suitable: "✅ उपयुक्त",
+                not_recommended: "❌ अनुशंसित नहीं",
+                next_season_crops: "अगले मौसम की फसलें",
+                error_min_points: "कृपया खेत को परिभाषित करने के लिए कम से कम 3 बिंदु चुनें।"
+            },
+            pa: {
+                title: "DICE-ਖੇਤ ਯੋਜਨਾ ਸਿਸਟਮ",
+                header_title: "🌾 ਖੇਤ ਯੋਜਨਾ ਸਿਸਟਮ",
+                header_subtitle: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ",
+                language_selection: "🌐 ਭਾਸ਼ਾ ਚੁਣੋ",
+                lang_english: "ਅੰਗਰੇਜ਼ੀ",
+                lang_hindi: "ਹਿੰਦੀ",
+                lang_punjabi: "ਪੰਜਾਬੀ",
+                status_initial: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ",
+                status_drawing: "ਖੇਤ ਦੀਆਂ ਸੀਮਾਵਾਂ ਨੂੰ ਨਿਸ਼ਾਨਬੱਧ ਕਰਨ ਲਈ ਨਕਸ਼ੇ 'ਤੇ ਕਲਿੱਕ ਕਰੋ। ਮੁਕੰਮਲ ਹੋਣ 'ਤੇ 'ਖੇਤ ਮੁਕੰਮਲ ਕਰੋ' 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+                status_point_added: "ਬਿੰਦੂ {n} ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ। ਸੀਮਾਵਾਂ ਨਿਸ਼ਚਿਤ ਕਰਨ ਲਈ ਕਲਿੱਕ ਕਰਦੇ ਰਹੋ।",
+                status_field_completed: "ਖੇਤ ਮੁਕੰਮਲ ਹੋਇਆ! ਹੁਣ ਸਿਫਾਰਸ਼ਾਂ ਪ੍ਰਾਪਤ ਕਰਨ ਲਈ ਫਸਲ ਚੁਣੋ।",
+                status_field_cleared: "ਖੇਤ ਸਾਫ ਕੀਤਾ ਗਿਆ। ਦੁਬਾਰਾ ਸ਼ੁਰੂ ਕਰਨ ਲਈ 'ਖੇਤ ਚੋਣ ਸ਼ੁਰੂ ਕਰੋ' 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+                status_crop_selected: "{crop} ਚੁਣਿਆ ਗਿਆ! ਵਿਸਤ੍ਰਿਤ ਸਿਫਾਰਸ਼ਾਂ ਲਈ ਬਿਜਾਈ ਦਾ ਮੌਸਮ ਚੁਣੋ।",
+                field_mapping: "📍 ਖੇਤ ਨਕਸ਼ੇਬੰਦੀ",
+                start_field: "ਖੇਤ ਚੋਣ ਸ਼ੁਰੂ ਕਰੋ",
+                clear_field: "ਖੇਤ ਸਾਫ ਕਰੋ",
+                complete_field: "ਖੇਤ ਮੁਕੰਮਲ ਕਰੋ",
+                selected_area: "ਚੁਣਿਆ ਖੇਤਰ",
+                unit_acres: "ਏਕੜ",
+                unit_hectares: "ਹੈਕਟੇਅਰ",
+                select_crop: "🌱 ਫਸਲ ਚੁਣੋ",
+                crop_wheat: "ਕਣਕ",
+                crop_corn: "ਮੱਕੀ",
+                crop_rice: "ਚੌਲ",
+                crop_soybean: "ਸੋਇਆਬੀਨ",
+                crop_potato: "ਆਲੂ",
+                crop_tomato: "ਟਮਾਟਰ",
+                planting_season: "📅 ਬਿਜਾਈ ਦਾ ਮੌਸਮ",
+                select_season: "ਮੌਸਮ ਚੁਣੋ",
+                season_spring: "ਬਸੰਤ",
+                season_summer: "ਗਰਮੀ",
+                season_fall: "ਪਤਝੜ",
+                season_winter: "ਸਰਦੀ",
+                recommendations_title: "📊 ਖੇਤੀ ਸਿਫਾਰਸ਼ਾਂ",
+                seeds_required: "ਲੋੜੀਂਦੇ ਬੀਜ",
+                fertilizer: "ਖਾਦ",
+                water_needed: "ਲੋੜੀਂਦਾ ਪਾਣੀ",
+                row_spacing: "ਕਤਾਰ ਦੀ ਦੂਰੀ",
+                expected_yield: "ਉਮੀਦੀ ਉਪਜ",
+                estimated_cost: "ਅਨੁਮਾਨਿਤ ਲਾਗਤ",
+                estimated_revenue: "ਅਨੁਮਾਨਿਤ ਮਾਲੀਆ",
+                estimated_profit: "ਅਨੁਮਾਨਿਤ ਲਾਭ",
+                season_suitability: "ਮੌਸਮ ਅਨੁਕੂਲਤਾ",
+                suitable: "✅ ਅਨੁਕੂਲ",
+                not_recommended: "❌ ਸਿਫਾਰਸ਼ ਨਹੀਂ",
+                next_season_crops: "ਅਗਲੇ ਮੌਸਮ ਦੀਆਂ ਫਸਲਾਂ",
+                error_min_points: "ਕਿਰਪਾ ਕਰਕੇ ਖੇਤ ਨੂੰ ਪਰਿਭਾਸ਼ਿਤ ਕਰਨ ਲਈ ਘੱਟੋ-ਘੱਟ 3 ਬਿੰਦੂ ਚੁਣੋ।"
+            }
+        };
 
         // Crop data with requirements per acre (costs in Indian Rupees, seeds and fertilizer in kg)
         const cropData = {
             wheat: {
+                displayName: { en: "Wheat", hi: "गेहूं", pa: "ਕਣਕ" },
                 seeds: "40.8-54.4 kg",
                 fertilizer: "45.4-68.0 kg NPK",
                 water: "20-25 inches",
@@ -365,9 +527,14 @@
                 yield: "40-80 bushels",
                 cost: "₹15000-20000",
                 marketPrice: "₹2000-2500 per bushel",
-                rotation: ["pulses", "mustard", "barley"]
+                rotation: [
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "mustard", hi: "सरसों", pa: "ਸਰ੍ਹੋਂ" },
+                    { en: "barley", hi: "जौ", pa: "ਜੌ" }
+                ]
             },
             corn: {
+                displayName: { en: "Corn", hi: "मक्का", pa: "ਮੱਕੀ" },
                 seeds: "9.1-11.3 kg",
                 fertilizer: "68.0-90.7 kg NPK",
                 water: "20-30 inches",
@@ -376,9 +543,14 @@
                 yield: "150-200 bushels",
                 cost: "₹25000-35000",
                 marketPrice: "₹1800-2200 per bushel",
-                rotation: ["soybean", "pulses", "wheat"]
+                rotation: [
+                    { en: "soybean", hi: "सोयाबीन", pa: "ਸੋਇਆਬੀਨ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" }
+                ]
             },
             rice: {
+                displayName: { en: "Rice", hi: "चावल", pa: "ਚੌਲ" },
                 seeds: "36.3-45.4 kg",
                 fertilizer: "54.4-81.6 kg NPK",
                 water: "40-50 inches",
@@ -387,9 +559,14 @@
                 yield: "120-180 bushels",
                 cost: "₹30000-45000",
                 marketPrice: "₹2500-3000 per bushel",
-                rotation: ["wheat", "pulses", "vegetables"]
+                rotation: [
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "vegetables", hi: "सब्जियाँ", pa: "ਸਬਜ਼ੀਆਂ" }
+                ]
             },
             soybean: {
+                displayName: { en: "Soybean", hi: "सोयाबीन", pa: "ਸੋਇਆਬੀਨ" },
                 seeds: "22.7-31.8 kg",
                 fertilizer: "22.7-36.3 kg PK",
                 water: "15-25 inches",
@@ -398,9 +575,14 @@
                 yield: "40-70 bushels",
                 cost: "₹18000-25000",
                 marketPrice: "₹4000-4500 per bushel",
-                rotation: ["corn", "wheat", "millets"]
+                rotation: [
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "millets", hi: "बाजरा", pa: "ਬਾਜਰਾ" }
+                ]
             },
             potato: {
+                displayName: { en: "Potato", hi: "आलू", pa: "ਆਲੂ" },
                 seeds: "680.4-907.2 kg",
                 fertilizer: "90.7-136.1 kg NPK",
                 water: "20-30 inches",
@@ -409,9 +591,14 @@
                 yield: "300-500 cwt",
                 cost: "₹65000-95000",
                 marketPrice: "₹1000-1500 per cwt",
-                rotation: ["corn", "pulses", "wheat"]
+                rotation: [
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" },
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" }
+                ]
             },
             tomato: {
+                displayName: { en: "Tomato", hi: "टमाटर", pa: "ਟਮਾਟਰ" },
                 seeds: "0.11-0.23 kg",
                 fertilizer: "113.4-158.8 kg NPK",
                 water: "25-35 inches",
@@ -420,7 +607,11 @@
                 yield: "20-40 tons",
                 cost: "₹120000-200000",
                 marketPrice: "₹50000-70000 per ton",
-                rotation: ["pulses", "wheat", "corn"]
+                rotation: [
+                    { en: "pulses", hi: "दालें", pa: "ਦਾਲਾਂ" },
+                    { en: "wheat", hi: "गेहूं", pa: "ਕਣਕ" },
+                    { en: "corn", hi: "मक्का", pa: "ਮੱਕੀ" }
+                ]
             }
         };
 
@@ -439,7 +630,7 @@
             if (fieldPolygon) {
                 map.removeLayer(fieldPolygon);
             }
-            updateStatus("Click on the map to mark field boundaries. Click 'Complete Field' when done.");
+            updateStatus(translations[currentLanguage].status_drawing);
         }
 
         function onMapClick(e) {
@@ -453,12 +644,12 @@
                 opacity: 1,
                 fillOpacity: 0.8
             }).addTo(map);
-            updateStatus(`Point ${fieldPoints.length} added. Continue clicking to define boundaries.`);
+            updateStatus(translations[currentLanguage].status_point_added.replace('{n}', fieldPoints.length));
         }
 
         function completeField() {
             if (fieldPoints.length < 3) {
-                alert("Please select at least 3 points to define a field.");
+                alert(translations[currentLanguage].error_min_points);
                 return;
             }
             drawingMode = false;
@@ -475,7 +666,7 @@
             document.getElementById('areaDisplay').style.display = 'block';
             updateAreaDisplay();
             document.getElementById('cropSelection').style.display = 'block';
-            updateStatus("Field completed! Now select a crop to get recommendations.");
+            updateStatus(translations[currentLanguage].status_field_completed);
             map.fitBounds(fieldPolygon.getBounds());
         }
 
@@ -500,7 +691,7 @@
             document.querySelectorAll('.crop-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            updateStatus("Field cleared. Click 'Start Field Selection' to begin again.");
+            updateStatus(translations[currentLanguage].status_field_cleared);
         }
 
         function selectCrop(crop) {
@@ -510,14 +701,14 @@
             });
             document.querySelector(`[data-crop="${crop}"]`).classList.add('selected');
             document.getElementById('seasonSelection').style.display = 'block';
-            updateStatus(`${crop.charAt(0).toUpperCase() + crop.slice(1)} selected! Choose planting season for detailed recommendations.`);
+            updateStatus(translations[currentLanguage].status_crop_selected.replace('{crop}', cropData[crop].displayName[currentLanguage]));
             updateRecommendations();
         }
 
         function updateAreaDisplay() {
             const unit = document.getElementById('areaUnit').value;
             fieldArea = calculatePolygonArea(fieldPoints, unit);
-            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ` ${unit}`;
+            document.getElementById('areaValue').textContent = fieldArea.toFixed(2) + ` ${translations[currentLanguage][`unit_${unit}`]}`;
             updateRecommendations();
         }
 
@@ -525,7 +716,6 @@
             if (!selectedCrop || fieldArea === 0) return;
             const season = document.getElementById('season').value;
             const crop = cropData[selectedCrop];
-            const unit = document.getElementById('areaUnit').value;
 
             // Calculate revenue and profit
             const yieldRange = multiplyRange(crop.yield, fieldArea, false);
@@ -536,35 +726,35 @@
 
             let recommendations = `
                 <div class="rec-item">
-                    <span class="rec-label">Seeds Required:</span>
+                    <span class="rec-label" data-i18n="seeds_required">${translations[currentLanguage].seeds_required}</span>
                     <span class="rec-value">${multiplyRange(crop.seeds, fieldArea)}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Fertilizer:</span>
+                    <span class="rec-label" data-i18n="fertilizer">${translations[currentLanguage].fertilizer}</span>
                     <span class="rec-value">${multiplyRange(crop.fertilizer, fieldArea)}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Water Needed:</span>
+                    <span class="rec-label" data-i18n="water_needed">${translations[currentLanguage].water_needed}</span>
                     <span class="rec-value">${multiplyRange(crop.water, fieldArea)}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Row Spacing:</span>
+                    <span class="rec-label" data-i18n="row_spacing">${translations[currentLanguage].row_spacing}</span>
                     <span class="rec-value">${crop.spacing}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Expected Yield:</span>
+                    <span class="rec-label" data-i18n="expected_yield">${translations[currentLanguage].expected_yield}</span>
                     <span class="rec-value">${yieldRange}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Estimated Cost:</span>
+                    <span class="rec-label" data-i18n="estimated_cost">${translations[currentLanguage].estimated_cost}</span>
                     <span class="rec-value">${costRange}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Estimated Revenue:</span>
+                    <span class="rec-label" data-i18n="estimated_revenue">${translations[currentLanguage].estimated_revenue}</span>
                     <span class="rec-value">${revenue}</span>
                 </div>
                 <div class="rec-item">
-                    <span class="rec-label">Estimated Profit:</span>
+                    <span class="rec-label" data-i18n="estimated_profit">${translations[currentLanguage].estimated_profit}</span>
                     <span class="rec-value">${profit}</span>
                 </div>
             `;
@@ -573,14 +763,14 @@
                 const suitable = crop.season.includes(season);
                 recommendations += `
                     <div class="rec-item">
-                        <span class="rec-label">Season Suitability:</span>
+                        <span class="rec-label" data-i18n="season_suitability">${translations[currentLanguage].season_suitability}</span>
                         <span class="rec-value" style="color: ${suitable ? '#27ae60' : '#e74c3c'}">
-                            ${suitable ? '✅ Suitable' : '❌ Not Recommended'}
+                            ${translations[currentLanguage][suitable ? 'suitable' : 'not_recommended']}
                         </span>
                     </div>
                     <div class="rec-item">
-                        <span class="rec-label">Next Season Crops:</span>
-                        <span class="rec-value">${crop.rotation.join(", ")}</span>
+                        <span class="rec-label" data-i18n="next_season_crops">${translations[currentLanguage].next_season_crops}</span>
+                        <span class="rec-value">${crop.rotation.map(r => r[currentLanguage]).join(", ")}</span>
                     </div>
                 `;
             }
@@ -634,8 +824,8 @@
             const revenueNumbers = revenue.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
             const costNumbers = cost.match(/\d+(\.\d+)?/g)?.map(parseFloat) || [0, 0];
             if (revenueNumbers.length === 2 && costNumbers.length === 2) {
-                const minProfit = revenueNumbers[0] - costNumbers[1]; // Conservative: min revenue - max cost
-                const maxProfit = revenueNumbers[1] - costNumbers[0]; // Optimistic: max revenue - min cost
+                const minProfit = revenueNumbers[0] - costNumbers[1];
+                const maxProfit = revenueNumbers[1] - costNumbers[0];
                 return `₹${minProfit.toFixed(0)}-${maxProfit.toFixed(0)}`;
             }
             return "N/A";
@@ -653,8 +843,27 @@
             document.getElementById('statusInfo').textContent = message;
         }
 
+        function updateLanguage() {
+            currentLanguage = document.getElementById('language').value;
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                element.textContent = translations[currentLanguage][key] || translations.en[key];
+            });
+            document.title = translations[currentLanguage].title;
+            updateAreaDisplay();
+            if (selectedCrop) {
+                updateRecommendations();
+                updateStatus(translations[currentLanguage].status_crop_selected.replace('{crop}', cropData[selectedCrop].displayName[currentLanguage]));
+            } else if (fieldPoints.length > 0) {
+                updateStatus(translations[currentLanguage].status_drawing);
+            } else {
+                updateStatus(translations[currentLanguage].status_initial);
+            }
+        }
+
         window.onload = function() {
             initMap();
+            updateLanguage();
         };
     </script>
 </body>
