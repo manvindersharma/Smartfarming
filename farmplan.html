@@ -350,11 +350,11 @@
         let selectedCrop = null;
         let fieldArea = 0;
 
-        // Crop data with requirements per acre (costs in Indian Rupees)
+        // Crop data with requirements per acre (costs in Indian Rupees, seeds and fertilizer in kg)
         const cropData = {
             wheat: {
-                seeds: "90-120 lbs",
-                fertilizer: "100-150 lbs NPK",
+                seeds: "40.8-54.4 kg", // 90-120 lbs * 0.453592
+                fertilizer: "45.4-68.0 kg NPK", // 100-150 lbs * 0.453592
                 water: "20-25 inches",
                 spacing: "6-8 inches rows",
                 season: ["fall", "spring"],
@@ -362,8 +362,8 @@
                 cost: "₹15000-20000"
             },
             corn: {
-                seeds: "20-25 lbs",
-                fertilizer: "150-200 lbs NPK",
+                seeds: "9.1-11.3 kg", // 20-25 lbs * 0.453592
+                fertilizer: "68.0-90.7 kg NPK", // 150-200 lbs * 0.453592
                 water: "20-30 inches",
                 spacing: "30 inches rows",
                 season: ["spring", "summer"],
@@ -371,8 +371,8 @@
                 cost: "₹25000-35000"
             },
             rice: {
-                seeds: "80-100 lbs",
-                fertilizer: "120-180 lbs NPK",
+                seeds: "36.3-45.4 kg", // 80-100 lbs * 0.453592
+                fertilizer: "54.4-81.6 kg NPK", // 120-180 lbs * 0.453592
                 water: "40-50 inches",
                 spacing: "Flooded fields",
                 season: ["spring", "summer"],
@@ -380,8 +380,8 @@
                 cost: "₹30000-45000"
             },
             soybean: {
-                seeds: "50-70 lbs",
-                fertilizer: "50-80 lbs PK",
+                seeds: "22.7-31.8 kg", // 50-70 lbs * 0.453592
+                fertilizer: "22.7-36.3 kg PK", // 50-80 lbs * 0.453592
                 water: "15-25 inches",
                 spacing: "7-15 inches rows",
                 season: ["spring", "summer"],
@@ -389,8 +389,8 @@
                 cost: "₹18000-25000"
             },
             potato: {
-                seeds: "1500-2000 lbs",
-                fertilizer: "200-300 lbs NPK",
+                seeds: "680.4-907.2 kg", // 1500-2000 lbs * 0.453592
+                fertilizer: "90.7-136.1 kg NPK", // 200-300 lbs * 0.453592
                 water: "20-30 inches",
                 spacing: "12 inches apart",
                 season: ["spring", "fall"],
@@ -398,8 +398,8 @@
                 cost: "₹65000-95000"
             },
             tomato: {
-                seeds: "0.25-0.5 lbs",
-                fertilizer: "250-350 lbs NPK",
+                seeds: "0.11-0.23 kg", // 0.25-0.5 lbs * 0.453592
+                fertilizer: "113.4-158.8 kg NPK", // 250-350 lbs * 0.453592
                 water: "25-35 inches",
                 spacing: "18-36 inches",
                 season: ["spring", "summer"],
@@ -582,24 +582,24 @@
         function multiplyRange(range, multiplier) {
             if (range.includes('₹')) {
                 // Handle cost ranges
-                const numbers = range.match(/\d+/g);
-                if (numbers.length === 2) {
-                    const min = parseInt(numbers[0]) * multiplier;
-                    const max = parseInt(numbers[1]) * multiplier;
+                const numbers = range.match(/\d+(\.\d+)?/g);
+                if (numbers && numbers.length === 2) {
+                    const min = parseFloat(numbers[0]) * multiplier;
+                    const max = parseFloat(numbers[1]) * multiplier;
                     return `₹${min.toFixed(0)}-${max.toFixed(0)}`;
                 }
             } else {
-                // Handle other ranges
-                const numbers = range.match(/\d+/g);
+                // Handle other ranges (kg, inches, bushels, cwt, tons)
+                const numbers = range.match(/\d+(\.\d+)?/g);
                 if (numbers && numbers.length >= 1) {
                     if (numbers.length === 2) {
                         const min = parseFloat(numbers[0]) * multiplier;
                         const max = parseFloat(numbers[1]) * multiplier;
-                        const unit = range.replace(/[\d\-\s]/g, '');
+                        const unit = range.replace(/[\d\-\.\s]/g, '');
                         return `${min.toFixed(1)}-${max.toFixed(1)} ${unit}`;
                     } else {
                         const value = parseFloat(numbers[0]) * multiplier;
-                        const unit = range.replace(/[\d\s]/g, '');
+                        const unit = range.replace(/[\d\.\s]/g, '');
                         return `${value.toFixed(1)} ${unit}`;
                     }
                 }
